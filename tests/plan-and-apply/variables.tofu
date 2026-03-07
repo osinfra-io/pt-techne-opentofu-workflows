@@ -1,9 +1,5 @@
 # Input Variables
-# https://opentofu.io/docs/language/values/variables
-
-variable "kms_encryption_key" {
-  type = string
-}
+# https://opentofu.org/docs/language/values/variables
 
 variable "project_billing_account" {
   default = "01C550-A2C86B-B8F16B"
@@ -18,10 +14,20 @@ variable "project_folder_id" {
   type = string
 }
 
+# These three state_* variables are required for early variable evaluation for backend and provider configuration.
+# They are defined in the GitHub Actions called workflows and should NOT be set in the OpenTofu configuration.
+
 variable "state_bucket" {
-  type = string
+  description = "The name of the GCS bucket to store state files"
+  type        = string
+}
+
+variable "state_kms_encryption_key" {
+  description = "The KMS encryption key for state and plan files"
+  type        = string
 }
 
 variable "state_prefix" {
-  type = string
+  description = "The prefix for state files in the GCS bucket"
+  type        = string
 }

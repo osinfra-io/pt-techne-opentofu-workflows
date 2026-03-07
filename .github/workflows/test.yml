@@ -50,7 +50,7 @@ jobs:
       # https://github.com/marketplace/actions/checkout
 
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       # GitHub - Setup SSH for private module access
       # Uncomment if you have private modules
@@ -88,10 +88,10 @@ jobs:
         continue-on-error: true
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         env:
-          TEST_STDOUT: ${{ steps.test.outputs.stdout }}
+          OPENTOFU_OUTPUT: ${{ steps.test.outputs.stdout }}
         with:
           script: |
-            const testResults = process.env.TEST_STDOUT || 'No output available.';
+            const tofuOutput = process.env.OPENTOFU_OUTPUT || 'No output available.';
             core.summary
-              .addCodeBlock(testResults, 'hcl')
+              .addCodeBlock(tofuOutput, 'hcl')
               .write();
