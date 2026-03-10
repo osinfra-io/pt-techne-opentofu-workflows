@@ -25,6 +25,21 @@ Rather than copying and pasting from one workflow to another, you can make workf
 - [plan-and-apply.yml](.github/workflows/plan-and-apply.yml)
 - [test.yml](.github/workflows/test.yml)
 
+```mermaid
+graph LR
+    A[Pull request] --> B[Sandbox: Main]
+    A --> C[Tests]
+    D[Push to main] --> E[Non-Production: Main]
+    E --> F[Production: Main]
+
+    style A fill:#fff4e6,color:#000
+    style B fill:#d4edda,color:#000
+    style C fill:#d4edda,color:#000
+    style D fill:#fff4e6,color:#000
+    style E fill:#d1ecf1,color:#000
+    style F fill:#e6d9f5,color:#000
+```
+
 ### Usage
 
 You can check the [.github/workflows](.github/workflows/) directory for example configurations:
