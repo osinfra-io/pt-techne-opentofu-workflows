@@ -24,4 +24,5 @@ jobs:
       opentofu_state_bucket: pt-techne-state-nonprod
       opentofu_version: ${{ vars.OPENTOFU_VERSION }}
       opentofu_workspace: main-non-production
+      working_directory: tests/plan-and-apply
       workload_identity_provider: projects/640681940147/locations/global/workloadIdentityPools/github-actions/providers/github-actions-oidc

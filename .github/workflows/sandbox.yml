@@ -27,4 +27,5 @@ jobs:
       opentofu_state_bucket: pt-techne-state-sb
       opentofu_version: ${{ vars.OPENTOFU_VERSION }}
       opentofu_workspace: main-sandbox
+      working_directory: tests/plan-and-apply
       workload_identity_provider: projects/190688376851/locations/global/workloadIdentityPools/github-actions/providers/github-actions-oidc
