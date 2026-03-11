@@ -6,6 +6,6 @@ module "helpers" {
 
   cost_center         = "x001"
   data_classification = "public"
-  repository          = "github-opentofu-gcp-called-workflows"
-  team                = "testing"
+  repository          = "pt-techne-opentofu-workflows"
+  team                = "techne"
 }

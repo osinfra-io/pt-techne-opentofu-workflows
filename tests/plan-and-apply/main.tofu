@@ -6,8 +6,8 @@ module "project" {
 
   billing_account                 = var.project_billing_account
   cis_2_2_logging_sink_project_id = var.project_cis_2_2_logging_sink_project_id
-  description                     = "workflow"
-  folder_id                       = var.project_folder_id
+  description                     = module.helpers.project_naming.description
+  folder_id                       = module.helpers.environment_folder_id
   labels                          = module.helpers.labels
   prefix                          = "test"
 }

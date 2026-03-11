@@ -10,10 +10,6 @@ variable "project_cis_2_2_logging_sink_project_id" {
   type = string
 }
 
-variable "project_folder_id" {
-  type = string
-}
-
 # These three state_* variables are required for early variable evaluation for backend and provider configuration.
 # They are defined in the GitHub Actions called workflows and should NOT be set in the OpenTofu configuration.
 
