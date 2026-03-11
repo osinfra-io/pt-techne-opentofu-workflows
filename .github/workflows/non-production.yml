@@ -18,11 +18,10 @@ jobs:
     with:
       checkout_ref: ${{ github.ref }}
       github_environment: "Non-Production: Main"
-      service_account: plt-lz-testing-github@plt-lz-backend-tfa3-nonprod.iam.gserviceaccount.com
-      opentofu_kms_encryption_key: projects/plt-lz-backend-tfa3-nonprod/locations/us/keyRings/state-encryption/cryptoKeys/default
-      opentofu_plan_args: -var-file=tfvars/non-production.tfvars
-      opentofu_state_bucket: plt-lz-testing-ecf2-nonprod
+      service_account: pt-techne-github@pt-corpus-tf61-nonprod.iam.gserviceaccount.com
+      opentofu_kms_encryption_key: projects/pt-corpus-tf61-nonprod/locations/us/keyRings/state-encryption/cryptoKeys/default
+      opentofu_plan_args: -var-file=environments/non-production.tfvars
+      opentofu_state_bucket: pt-techne-state-nonprod
       opentofu_version: ${{ vars.OPENTOFU_VERSION }}
       opentofu_workspace: main-non-production
-      working_directory: tests/plan-and-apply
-      workload_identity_provider: projects/992372365053/locations/global/workloadIdentityPools/github-actions/providers/github-actions-oidc
+      workload_identity_provider: projects/640681940147/locations/global/workloadIdentityPools/github-actions/providers/github-actions-oidc
