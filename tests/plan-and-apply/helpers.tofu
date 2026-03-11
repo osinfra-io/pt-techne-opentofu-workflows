@@ -6,6 +6,7 @@ module "helpers" {
 
   cost_center         = "x001"
   data_classification = "public"
+  logos_workspaces     = ["pt-logos-main-production"]
   repository          = "pt-techne-opentofu-workflows"
-  team                = "techne"
+  team                = "pt-techne"
 }
