@@ -1,11 +1,12 @@
 # OpenTofu Core Helpers Module (osinfra.io)
-# https://github.com/osinfra-io/opentofu-core-helpers
+# https://github.com/osinfra-io/pt-arche-core-helpers
 
 module "helpers" {
-  source = "github.com/osinfra-io/opentofu-core-helpers//root?ref=bf324af8c32babb9cb27ac194caefe3f36ce3f30" # v0.1.3
+  source = "github.com/osinfra-io/pt-arche-core-helpers//root?ref=9734175404f3c0b26b0a58a6c877828dba2dea70" # v0.2.1
 
   cost_center         = "x001"
   data_classification = "public"
-  repository          = "github-opentofu-gcp-called-workflows"
-  team                = "testing"
+  logos_workspaces    = ["pt-techne-main-production"]
+  repository          = "pt-techne-opentofu-workflows"
+  team                = "pt-techne"
 }
