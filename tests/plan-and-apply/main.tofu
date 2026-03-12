@@ -9,7 +9,7 @@ module "project" {
   description                     = module.helpers.project_naming.description
   folder_id                       = module.helpers.environment_folder_id
   labels                          = module.helpers.labels
-  prefix                          = "test"
+  prefix                          = module.helpers.project_naming.prefix
 }
 
 # Google Storage Bucket Module (osinfra.io)
