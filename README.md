@@ -1,6 +1,6 @@
 # <img align="left" width="45" height="45" src="https://user-images.githubusercontent.com/1610100/201473670-e0e6bdeb-742f-4be1-a47a-3506309620a3.png"> OpenTofu Google Cloud Platform Called Workflows
 
-[![Dependabot](https://img.shields.io/github/actions/workflow/status/osinfra-io/pt-techne-opentofu-workflows/local-dependabot.yml?style=for-the-badge&logo=github&color=2088FF&label=Dependabot)](https://github.com/osinfra-io/pt-techne-opentofu-workflows/actions/workflows/local-dependabot.yml)
+[![Dependabot](https://img.shields.io/github/actions/workflow/status/osinfra-io/pt-techne-opentofu-workflows/local-dependabot.yml?style=for-the-badge&logo=github&color=2088FF&label=Dependabot)](https://github.com/osinfra-io/pt-techne-opentofu-workflows/actions/workflows/local-dependabot.yml) [![Datadog Security Enabled](https://img.shields.io/badge/Datadog%20Security-Enabled-632CA6?style=for-the-badge&logo=datadog)](https://app.datadoghq.com/security/code-security/repositories?repository_id=pt-techne-opentofu-workflows)
 
 Reusing workflows avoids duplication. This makes workflows easier to maintain and allows you to create new workflows
 more quickly by building on the work of others, just as you do with actions.
@@ -24,21 +24,6 @@ Rather than copying and pasting from one workflow to another, you can make workf
 
 - [plan-and-apply.yml](.github/workflows/plan-and-apply.yml)
 - [test.yml](.github/workflows/test.yml)
-
-```mermaid
-graph LR
-    A[Pull request] --> B[Sandbox: Main]
-    A --> C[Tests]
-    D[Push to main] --> E[Non-Production: Main]
-    E --> F[Production: Main]
-
-    style A fill:#fff4e6,color:#000
-    style B fill:#d4edda,color:#000
-    style C fill:#d4edda,color:#000
-    style D fill:#fff4e6,color:#000
-    style E fill:#d1ecf1,color:#000
-    style F fill:#e6d9f5,color:#000
-```
 
 ### Usage
 
