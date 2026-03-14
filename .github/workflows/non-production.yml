@@ -6,6 +6,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: non-production
+  cancel-in-progress: false
+
 permissions:
   contents: read
   id-token: write
@@ -14,7 +18,7 @@ jobs:
   main:
     name: Main
     uses: ./.github/workflows/plan-and-apply.yml
-    if: github.actor != 'osinfra-sa'
+    if: github.event.head_commit.author.username != 'dependabot[bot]'
     with:
       checkout_ref: ${{ github.ref }}
       github_environment: "Non-Production: Main"
