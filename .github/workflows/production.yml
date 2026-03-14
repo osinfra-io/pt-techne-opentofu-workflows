@@ -24,8 +24,9 @@ jobs:
     name: Main
     uses: ./.github/workflows/plan-and-apply.yml
     if: |
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_commit.author.name != 'dependabot[bot]'
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_commit.author.name != 'dependabot[bot]')
     with:
       checkout_ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       github_environment: "Production: Main"
