@@ -149,7 +149,7 @@ jobs:
           script: |
             const tofuOutput = process.env.OPENTOFU_OUTPUT || 'No output available.';
             core.summary
-              .addCodeBlock(tofuOutput)
+              .addCodeBlock(tofuOutput, 'hcl')
               .write();
 
     outputs:
@@ -230,5 +230,5 @@ jobs:
           script: |
             const tofuOutput = process.env.OPENTOFU_OUTPUT || 'No output available.';
             core.summary
-              .addCodeBlock(tofuOutput)
+              .addCodeBlock(tofuOutput, 'hcl')
               .write();
