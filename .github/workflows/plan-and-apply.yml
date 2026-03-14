@@ -137,20 +137,11 @@ jobs:
           tofu plan -detailed-exitcode -input=false -out=plan.out ${{ inputs.opentofu_plan_args}} ${{ secrets.opentofu_plan_secret_args }}
 
       - name: OpenTofu show
-        id: show
-        run: tofu show -no-color plan.out
-
-      - name: OpenTofu summary
         continue-on-error: true
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
-        env:
-          OPENTOFU_OUTPUT: ${{ steps.show.outputs.stdout }}
-        with:
-          script: |
-            const tofuOutput = process.env.OPENTOFU_OUTPUT || 'No output available.';
-            core.summary
-              .addCodeBlock(tofuOutput, 'hcl')
-              .write();
+        run: |
+          echo '```ansi' >> $GITHUB_STEP_SUMMARY
+          tofu show plan.out >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
     outputs:
       plan-exit-code: ${{ steps.plan.outputs.exitcode }}
@@ -202,6 +193,7 @@ jobs:
       - name: Restore cache
         uses: actions/cache/restore@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         with:
+          fail-on-cache-miss: true
           path: |
             ${{ inputs.working_directory }}/.terraform
             ${{ inputs.working_directory }}/.terraform.lock.hcl
@@ -217,17 +209,13 @@ jobs:
           tofu_version: ${{ inputs.opentofu_version }}
 
       - name: OpenTofu apply
-        id: apply
-        run: tofu apply -no-color plan.out
+        run: |
+          set -o pipefail
+          tofu apply plan.out 2>&1 | tee /tmp/apply_output.txt
 
       - name: OpenTofu summary
         continue-on-error: true
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
-        env:
-          OPENTOFU_OUTPUT: ${{ steps.apply.outputs.stdout }}
-        with:
-          script: |
-            const tofuOutput = process.env.OPENTOFU_OUTPUT || 'No output available.';
-            core.summary
-              .addCodeBlock(tofuOutput, 'hcl')
-              .write();
+        run: |
+          echo '```ansi' >> $GITHUB_STEP_SUMMARY
+          cat /tmp/apply_output.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

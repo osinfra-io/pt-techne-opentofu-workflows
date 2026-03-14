@@ -8,6 +8,12 @@ on:
       - Non-Production
     types:
       - completed
+    branches:
+      - main
+
+concurrency:
+  group: production
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -17,9 +23,11 @@ jobs:
   main:
     name: Main
     uses: ./.github/workflows/plan-and-apply.yml
-    if: github.event.workflow_run.conclusion == 'success'
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_commit.author.name != 'dependabot[bot]'
     with:
-      checkout_ref: ${{ github.ref }}
+      checkout_ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       github_environment: "Production: Main"
       service_account: pt-techne-github@pt-corpus-tf16-prod.iam.gserviceaccount.com
       opentofu_kms_encryption_key: projects/pt-corpus-tf16-prod/locations/us/keyRings/state-encryption/cryptoKeys/default

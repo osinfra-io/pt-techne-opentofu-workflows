@@ -9,6 +9,10 @@ on:
     paths-ignore:
       - "**.md"
 
+concurrency:
+  group: sandbox-${{ github.head_ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
   id-token: write
