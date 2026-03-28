@@ -3,13 +3,13 @@
 
 # Comment or un-comment out the following two resources to test the apply job.
 
-module "bucket" {
+module "google_storage_bucket" {
   source = "github.com/osinfra-io/pt-arche-google-storage-bucket?ref=4767539fa395255ecb9c814c010938ef2878fc6e" # v0.3.1
 
   force_destroy = true
-  labels        = module.helpers.labels
+  labels        = module.core_helpers.labels
   location      = "US"
-  name          = "test-${random_id.test.hex}-${module.helpers.env}"
+  name          = "test-${random_id.test.hex}-${module.core_helpers.env}"
   project       = var.project
 }
 
