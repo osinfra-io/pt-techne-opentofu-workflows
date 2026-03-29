@@ -4,16 +4,21 @@ on:
   workflow_call:
     inputs:
       opentofu_test_args:
+        description: "Additional arguments to pass to the tofu test command"
         required: false
         type: string
+        default: ""
       opentofu_test_verbose:
+        description: "Whether to run tofu test with verbose output"
         required: false
         type: boolean
         default: false
       opentofu_version:
+        description: "The version of OpenTofu to use"
         required: true
         type: string
       working_directory:
+        description: "The working directory containing the OpenTofu configuration to test"
         required: false
         type: string
         default: .
@@ -25,6 +30,7 @@ on:
 
     secrets:
       opentofu_test_secret_args:
+        description: "Additional secret arguments to pass to the tofu test command"
         required: false
 
 permissions:

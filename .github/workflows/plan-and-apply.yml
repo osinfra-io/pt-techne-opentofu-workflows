@@ -4,34 +4,45 @@ on:
   workflow_call:
     inputs:
       checkout_ref:
-        required: true
+        description: "The git ref to checkout for the deployment"
+        required: false
         type: string
       github_environment:
+        description: "The GitHub environment to deploy to (sandbox, non-production, production)"
         required: true
         type: string
       opentofu_kms_encryption_key:
+        description: "The KMS key used to encrypt OpenTofu state"
         required: true
         type: string
       opentofu_plan_args:
+        description: "Additional arguments to pass to the tofu plan command"
         required: false
         type: string
+        default: ""
       opentofu_state_bucket:
+        description: "The GCS bucket used for OpenTofu state storage"
         required: true
         type: string
       opentofu_version:
+        description: "The version of OpenTofu to use"
         required: true
         type: string
       opentofu_workspace:
+        description: "The OpenTofu workspace to select"
         required: true
         type: string
       service_account:
+        description: "The GCP service account to impersonate for the deployment"
         required: true
         type: string
       working_directory:
+        description: "The working directory containing the OpenTofu configuration"
         required: false
         type: string
         default: .
       workload_identity_provider:
+        description: "The GCP Workload Identity Provider for OIDC authentication"
         required: true
         type: string
 
@@ -42,6 +53,7 @@ on:
       #   required: true
 
       opentofu_plan_secret_args:
+        description: "Additional secret arguments to pass to the tofu plan command"
         required: false
 
 permissions:
@@ -134,7 +146,7 @@ jobs:
       - name: OpenTofu plan
         id: plan
         run: |
-          tofu plan -detailed-exitcode -input=false -out=plan.out ${{ inputs.opentofu_plan_args}} ${{ secrets.opentofu_plan_secret_args }}
+          tofu plan -detailed-exitcode -input=false -out=plan.out ${{ inputs.opentofu_plan_args }} ${{ secrets.opentofu_plan_secret_args }}
 
       - name: OpenTofu show
         id: show
