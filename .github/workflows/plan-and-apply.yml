@@ -172,6 +172,7 @@ jobs:
         with:
           name: opentofu-plan-${{ inputs.opentofu_workspace }}
           path: ${{ inputs.working_directory }}/plan.json
+          retention-days: 7
 
     outputs:
       plan-exit-code: ${{ steps.plan.outputs.exitcode }}
@@ -262,3 +263,4 @@ jobs:
         with:
           name: opentofu-apply-${{ inputs.opentofu_workspace }}
           path: ${{ inputs.working_directory }}/apply.json
+          retention-days: 7
