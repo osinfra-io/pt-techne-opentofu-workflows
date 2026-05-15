@@ -190,12 +190,11 @@ jobs:
               .addHeading(`${emoji} OpenTofu Plan`, 2)
               .addTable([
                 [{data: 'Input', header: true}, {data: 'Value', header: true}],
-                ['Environment', environment],
-                ['Working Directory', workingDirectory],
-                ['OpenTofu Version', version],
-                ['Status', status],
+                ['🌍 Environment', environment],
+                ['📁 Working Directory', workingDirectory],
+                ['⚙️ OpenTofu Version', version],
+                ['📋 Status', status],
               ])
-              .addDetails('Full Plan Output', `<pre lang="hcl"><code>${output}</code></pre>`)
               .write();
 
       # GitHub - Upload Artifact
@@ -315,12 +314,11 @@ jobs:
               .addHeading(`${emoji} OpenTofu Apply`, 2)
               .addTable([
                 [{data: 'Input', header: true}, {data: 'Value', header: true}],
-                ['Environment', environment],
-                ['Working Directory', workingDirectory],
-                ['OpenTofu Version', version],
-                ['Status', status],
+                ['🌍 Environment', environment],
+                ['📁 Working Directory', workingDirectory],
+                ['⚙️ OpenTofu Version', version],
+                ['📋 Status', status],
               ])
-              .addDetails('Full Apply Output', `<pre lang="hcl"><code>${output}</code></pre>`)
               .write();
 
       # GitHub - Upload Artifact

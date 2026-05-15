@@ -126,9 +126,9 @@ jobs:
               .addHeading(`${emoji} OpenTofu Test`, 2)
               .addTable([
                 [{data: 'Input', header: true}, {data: 'Value', header: true}],
-                ['Working Directory', workingDirectory],
-                ['OpenTofu Version', version],
-                ['Status', status],
+                ['📁 Working Directory', workingDirectory],
+                ['⚙️ OpenTofu Version', version],
+                ['📋 Status', status],
               ])
               .addDetails('Full Test Output', `<pre lang="hcl"><code>${output}</code></pre>`)
               .write();
