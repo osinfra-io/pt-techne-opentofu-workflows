@@ -167,34 +167,50 @@ jobs:
             const workingDirectory = process.env.TOFU_WORKING_DIRECTORY || '.';
             const version = process.env.TOFU_VERSION || '';
 
-            const planMatch = output.match(/Plan: .+/);
+            const planMatch = output.match(/Plan: (\d+) to add, (\d+) to change, (\d+) to destroy/);
             const noChangesMatch = output.match(/No changes\. .+/);
             const errorMatch = output.match(/Error:.+/);
 
-            let emoji, status;
+            let emoji;
             if (errorMatch) {
               emoji = '❌';
-              status = errorMatch[0];
             } else if (planMatch) {
               emoji = '⚠️';
-              status = planMatch[0];
-            } else if (noChangesMatch) {
-              emoji = '✅';
-              status = noChangesMatch[0];
             } else {
               emoji = '✅';
-              status = 'No changes detected.';
+            }
+
+            const escapedOutput = output
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;');
+
+            core.summary.addHeading(`${emoji} OpenTofu Plan`, 3);
+
+            core.summary.addTable([
+              [{data: 'Input', header: true}, {data: 'Value', header: true}],
+              ['🌍 Environment', environment],
+              ['📁 Working Directory', workingDirectory],
+              ['⚙️ OpenTofu Version', version],
+            ]);
+
+            if (planMatch) {
+              core.summary.addTable([
+                [
+                  {data: '➕ Add', header: true},
+                  {data: '🔄 Change', header: true},
+                  {data: '🗑️ Destroy', header: true},
+                ],
+                [planMatch[1], planMatch[2], planMatch[3]],
+              ]);
+            }
+
+            if (errorMatch) {
+              core.summary.addRaw(`<blockquote>${errorMatch[0]}</blockquote>\n`);
             }
 
             await core.summary
-              .addHeading(`${emoji} OpenTofu Plan`, 3)
-              .addTable([
-                [{data: 'Input', header: true}, {data: 'Value', header: true}],
-                ['🌍 Environment', environment],
-                ['📁 Working Directory', workingDirectory],
-                ['⚙️ OpenTofu Version', version],
-                ['📋 Status', status],
-              ])
+              .addDetails('Full Plan Output', `<pre><code>${escapedOutput}</code></pre>`)
               .write();
 
       # GitHub - Upload Artifact
@@ -291,34 +307,48 @@ jobs:
             const workingDirectory = process.env.TOFU_WORKING_DIRECTORY || '.';
             const version = process.env.TOFU_VERSION || '';
 
-            const applyMatch = output.match(/Apply complete! .+/);
+            const applyMatch = output.match(/Apply complete! Resources: (\d+) added, (\d+) changed, (\d+) destroyed/);
             const noChangesMatch = output.match(/No changes\. .+/);
             const errorMatch = output.match(/Error:.+/);
 
-            let emoji, status;
+            let emoji;
             if (errorMatch) {
               emoji = '❌';
-              status = errorMatch[0];
-            } else if (applyMatch) {
-              emoji = '✅';
-              status = applyMatch[0];
-            } else if (noChangesMatch) {
-              emoji = '✅';
-              status = noChangesMatch[0];
             } else {
               emoji = '✅';
-              status = 'Apply complete.';
+            }
+
+            const escapedOutput = output
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;');
+
+            core.summary.addHeading(`${emoji} OpenTofu Apply`, 3);
+
+            core.summary.addTable([
+              [{data: 'Input', header: true}, {data: 'Value', header: true}],
+              ['🌍 Environment', environment],
+              ['📁 Working Directory', workingDirectory],
+              ['⚙️ OpenTofu Version', version],
+            ]);
+
+            if (applyMatch) {
+              core.summary.addTable([
+                [
+                  {data: '➕ Added', header: true},
+                  {data: '🔄 Changed', header: true},
+                  {data: '🗑️ Destroyed', header: true},
+                ],
+                [applyMatch[1], applyMatch[2], applyMatch[3]],
+              ]);
+            }
+
+            if (errorMatch) {
+              core.summary.addRaw(`<blockquote>${errorMatch[0]}</blockquote>\n`);
             }
 
             await core.summary
-              .addHeading(`${emoji} OpenTofu Apply`, 3)
-              .addTable([
-                [{data: 'Input', header: true}, {data: 'Value', header: true}],
-                ['🌍 Environment', environment],
-                ['📁 Working Directory', workingDirectory],
-                ['⚙️ OpenTofu Version', version],
-                ['📋 Status', status],
-              ])
+              .addDetails('Full Apply Output', `<pre><code>${escapedOutput}</code></pre>`)
               .write();
 
       # GitHub - Upload Artifact
