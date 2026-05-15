@@ -123,7 +123,7 @@ jobs:
             }
 
             await core.summary
-              .addHeading(`${emoji} OpenTofu Test`, 2)
+              .addHeading(`${emoji} OpenTofu Test`, 3)
               .addTable([
                 [{data: 'Input', header: true}, {data: 'Value', header: true}],
                 ['📁 Working Directory', workingDirectory],

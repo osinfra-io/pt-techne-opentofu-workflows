@@ -187,7 +187,7 @@ jobs:
             }
 
             await core.summary
-              .addHeading(`${emoji} OpenTofu Plan`, 2)
+              .addHeading(`${emoji} OpenTofu Plan`, 3)
               .addTable([
                 [{data: 'Input', header: true}, {data: 'Value', header: true}],
                 ['🌍 Environment', environment],
@@ -311,7 +311,7 @@ jobs:
             }
 
             await core.summary
-              .addHeading(`${emoji} OpenTofu Apply`, 2)
+              .addHeading(`${emoji} OpenTofu Apply`, 3)
               .addTable([
                 [{data: 'Input', header: true}, {data: 'Value', header: true}],
                 ['🌍 Environment', environment],
