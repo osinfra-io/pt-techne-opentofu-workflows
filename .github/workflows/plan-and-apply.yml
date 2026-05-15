@@ -160,12 +160,10 @@ jobs:
           TOFU_ENVIRONMENT: ${{ inputs.github_environment }}
           TOFU_VERSION: ${{ inputs.opentofu_version }}
           TOFU_WORKING_DIRECTORY: ${{ inputs.working_directory }}
-          TOFU_WORKSPACE: ${{ inputs.opentofu_workspace }}
         with:
           script: |
             const output = process.env.OPENTOFU_OUTPUT || '';
             const environment = process.env.TOFU_ENVIRONMENT || '';
-            const workspace = process.env.TOFU_WORKSPACE || '';
             const workingDirectory = process.env.TOFU_WORKING_DIRECTORY || '.';
             const version = process.env.TOFU_VERSION || '';
 
@@ -193,7 +191,6 @@ jobs:
               .addTable([
                 [{data: 'Input', header: true}, {data: 'Value', header: true}],
                 ['Environment', environment],
-                ['Workspace', workspace],
                 ['Working Directory', workingDirectory],
                 ['OpenTofu Version', version],
                 ['Status', status],
@@ -288,12 +285,10 @@ jobs:
           TOFU_ENVIRONMENT: ${{ inputs.github_environment }}
           TOFU_VERSION: ${{ inputs.opentofu_version }}
           TOFU_WORKING_DIRECTORY: ${{ inputs.working_directory }}
-          TOFU_WORKSPACE: ${{ inputs.opentofu_workspace }}
         with:
           script: |
             const output = process.env.OPENTOFU_OUTPUT || '';
             const environment = process.env.TOFU_ENVIRONMENT || '';
-            const workspace = process.env.TOFU_WORKSPACE || '';
             const workingDirectory = process.env.TOFU_WORKING_DIRECTORY || '.';
             const version = process.env.TOFU_VERSION || '';
 
@@ -321,7 +316,6 @@ jobs:
               .addTable([
                 [{data: 'Input', header: true}, {data: 'Value', header: true}],
                 ['Environment', environment],
-                ['Workspace', workspace],
                 ['Working Directory', workingDirectory],
                 ['OpenTofu Version', version],
                 ['Status', status],
