@@ -95,9 +95,40 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           OPENTOFU_OUTPUT: ${{ steps.test.outputs.stdout }}
+          TOFU_VERSION: ${{ inputs.opentofu_version }}
+          TOFU_WORKING_DIRECTORY: ${{ inputs.working_directory }}
         with:
           script: |
-            const tofuOutput = process.env.OPENTOFU_OUTPUT || 'No output available.';
-            core.summary
-              .addCodeBlock(tofuOutput, 'hcl')
+            const output = process.env.OPENTOFU_OUTPUT || '';
+            const workingDirectory = process.env.TOFU_WORKING_DIRECTORY || '.';
+            const version = process.env.TOFU_VERSION || '';
+
+            const passMatch = output.match(/(\d+) passed/);
+            const failMatch = output.match(/(\d+) failed/);
+            const errorMatch = output.match(/Error:.+/);
+
+            let emoji, status;
+            if (errorMatch) {
+              emoji = '❌';
+              status = errorMatch[0];
+            } else if (failMatch) {
+              emoji = '❌';
+              status = `${failMatch[0]}${passMatch ? `, ${passMatch[0]}` : ''}`;
+            } else if (passMatch) {
+              emoji = '✅';
+              status = passMatch[0];
+            } else {
+              emoji = '✅';
+              status = 'Tests complete.';
+            }
+
+            await core.summary
+              .addHeading(`${emoji} OpenTofu Test`, 2)
+              .addTable([
+                [{data: 'Input', header: true}, {data: 'Value', header: true}],
+                ['Working Directory', workingDirectory],
+                ['OpenTofu Version', version],
+                ['Status', status],
+              ])
+              .addDetails('Full Test Output', `<pre lang="hcl"><code>${output}</code></pre>`)
               .write();
