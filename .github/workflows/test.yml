@@ -107,28 +107,45 @@ jobs:
             const failMatch = output.match(/(\d+) failed/);
             const errorMatch = output.match(/Error:.+/);
 
-            let emoji, status;
-            if (errorMatch) {
+            let emoji;
+            if (errorMatch || failMatch) {
               emoji = '❌';
-              status = errorMatch[0];
-            } else if (failMatch) {
-              emoji = '❌';
-              status = `${failMatch[0]}${passMatch ? `, ${passMatch[0]}` : ''}`;
-            } else if (passMatch) {
-              emoji = '✅';
-              status = passMatch[0];
             } else {
               emoji = '✅';
-              status = 'Tests complete.';
             }
 
-            await core.summary
-              .addHeading(`${emoji} OpenTofu Test`, 3)
-              .addTable([
-                [{data: 'Input', header: true}, {data: 'Value', header: true}],
-                ['📁 Working Directory', workingDirectory],
-                ['⚙️ OpenTofu Version', version],
-                ['📋 Status', status],
-              ])
-              .addDetails('Full Test Output', `<pre lang="hcl"><code>${output}</code></pre>`)
-              .write();
+            const lines = [
+              `### ${emoji} OpenTofu Test`,
+              '',
+              '| Input | Value |',
+              '|---|---|',
+              `| 📁 Working Directory | ${workingDirectory} |`,
+              `| ⚙️ OpenTofu Version | ${version} |`,
+              '',
+            ];
+
+            if (passMatch || failMatch) {
+              lines.push(
+                '| ✅ Passed | ❌ Failed |',
+                '|---|---|',
+                `| ${passMatch ? passMatch[1] : '0'} | ${failMatch ? failMatch[1] : '0'} |`,
+                '',
+              );
+            }
+
+            if (errorMatch) {
+              lines.push(`> ❌ ${errorMatch[0]}`, '');
+            }
+
+            lines.push(
+              '<details>',
+              '<summary>Full Test Output</summary>',
+              '',
+              '```',
+              output,
+              '```',
+              '',
+              '</details>',
+            );
+
+            await core.summary.addRaw(lines.join('\n')).write();
