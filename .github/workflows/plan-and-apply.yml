@@ -158,14 +158,10 @@ jobs:
         env:
           OPENTOFU_OUTPUT: ${{ steps.show.outputs.stdout }}
           TOFU_ENVIRONMENT: ${{ inputs.github_environment }}
-          TOFU_VERSION: ${{ inputs.opentofu_version }}
-          TOFU_WORKING_DIRECTORY: ${{ inputs.working_directory }}
         with:
           script: |
             const output = process.env.OPENTOFU_OUTPUT || '';
             const environment = process.env.TOFU_ENVIRONMENT || '';
-            const workingDirectory = process.env.TOFU_WORKING_DIRECTORY || '.';
-            const version = process.env.TOFU_VERSION || '';
 
             const planMatch = output.match(/Plan: (\d+) to add, (\d+) to change, (\d+) to destroy/);
             const errorMatch = output.match(/Error:.+/);
@@ -174,29 +170,51 @@ jobs:
             if (errorMatch) {
               emoji = '❌';
             } else if (planMatch) {
-              emoji = '⚠️';
+              emoji = '🔨';
             } else {
               emoji = '✅';
             }
 
+            const toAdd = [];
+            const toChange = [];
+            const toDestroy = [];
+
+            for (const line of output.split('\n')) {
+              const m = line.match(/# (.+) will be (created|destroyed|updated in-place)/);
+              const r = line.match(/# (.+) must be replaced/);
+              if (m) {
+                if (m[2] === 'created') toAdd.push(m[1]);
+                else if (m[2] === 'destroyed') toDestroy.push(m[1]);
+                else if (m[2] === 'updated in-place') toChange.push(m[1]);
+              } else if (r) {
+                toChange.push(r[1]);
+              }
+            }
+
             const lines = [
-              `### ${emoji} OpenTofu Plan`,
-              '',
-              '| Input | Value |',
-              '|---|---|',
-              `| 🌍 Environment | ${environment} |`,
-              `| 📁 Working Directory | ${workingDirectory} |`,
-              `| ⚙️ OpenTofu Version | ${version} |`,
+              `### ${emoji} OpenTofu Plan — ${environment}`,
               '',
             ];
 
             if (planMatch) {
               lines.push(
                 '| ➕ Add | 🔄 Change | 🗑️ Destroy |',
-                '|---|---|---|',
-                `| ${planMatch[1]} | ${planMatch[2]} | ${planMatch[3]} |`,
+                '|:---:|:---:|:---:|',
+                `| **${planMatch[1]}** | **${planMatch[2]}** | **${planMatch[3]}** |`,
                 '',
               );
+            }
+
+            if (toAdd.length || toChange.length || toDestroy.length) {
+              lines.push('| Action | Resource |', '|---|---|');
+              for (const r of toAdd)     lines.push(`| ➕ | \`${r}\` |`);
+              for (const r of toChange)  lines.push(`| 🔄 | \`${r}\` |`);
+              for (const r of toDestroy) lines.push(`| 🗑️ | \`${r}\` |`);
+              lines.push('');
+            }
+
+            if (!planMatch && !errorMatch) {
+              lines.push('**✅ No changes.** Your infrastructure matches the configuration.', '');
             }
 
             if (errorMatch) {
@@ -301,14 +319,10 @@ jobs:
         env:
           OPENTOFU_OUTPUT: ${{ steps.apply.outputs.stdout }}
           TOFU_ENVIRONMENT: ${{ inputs.github_environment }}
-          TOFU_VERSION: ${{ inputs.opentofu_version }}
-          TOFU_WORKING_DIRECTORY: ${{ inputs.working_directory }}
         with:
           script: |
             const output = process.env.OPENTOFU_OUTPUT || '';
             const environment = process.env.TOFU_ENVIRONMENT || '';
-            const workingDirectory = process.env.TOFU_WORKING_DIRECTORY || '.';
-            const version = process.env.TOFU_VERSION || '';
 
             const applyMatch = output.match(/Apply complete! Resources: (\d+) added, (\d+) changed, (\d+) destroyed/);
             const errorMatch = output.match(/Error:.+/);
@@ -317,27 +331,46 @@ jobs:
             if (errorMatch) {
               emoji = '❌';
             } else {
-              emoji = '✅';
+              emoji = '🚀';
+            }
+
+            const added = [];
+            const changed = [];
+            const destroyed = [];
+
+            for (const line of output.split('\n')) {
+              const created  = line.match(/^(.+): Creation complete/);
+              const modified = line.match(/^(.+): Modifications complete/);
+              const destroy  = line.match(/^(.+): Destruction complete/);
+              if (created)  added.push(created[1].trim());
+              if (modified) changed.push(modified[1].trim());
+              if (destroy)  destroyed.push(destroy[1].trim());
             }
 
             const lines = [
-              `### ${emoji} OpenTofu Apply`,
-              '',
-              '| Input | Value |',
-              '|---|---|',
-              `| 🌍 Environment | ${environment} |`,
-              `| 📁 Working Directory | ${workingDirectory} |`,
-              `| ⚙️ OpenTofu Version | ${version} |`,
+              `### ${emoji} OpenTofu Apply — ${environment}`,
               '',
             ];
 
             if (applyMatch) {
               lines.push(
                 '| ➕ Added | 🔄 Changed | 🗑️ Destroyed |',
-                '|---|---|---|',
-                `| ${applyMatch[1]} | ${applyMatch[2]} | ${applyMatch[3]} |`,
+                '|:---:|:---:|:---:|',
+                `| **${applyMatch[1]}** | **${applyMatch[2]}** | **${applyMatch[3]}** |`,
                 '',
               );
+            }
+
+            if (added.length || changed.length || destroyed.length) {
+              lines.push('| Action | Resource |', '|---|---|');
+              for (const r of added)     lines.push(`| ➕ | \`${r}\` |`);
+              for (const r of changed)   lines.push(`| 🔄 | \`${r}\` |`);
+              for (const r of destroyed) lines.push(`| 🗑️ | \`${r}\` |`);
+              lines.push('');
+            }
+
+            if (!applyMatch && !errorMatch) {
+              lines.push('**✅ No changes.** Your infrastructure matches the configuration.', '');
             }
 
             if (errorMatch) {
