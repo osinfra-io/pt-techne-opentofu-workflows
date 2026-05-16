@@ -183,6 +183,19 @@ jobs:
               }
             }
 
+            // Parse output-only changes
+            const outputChanges = [];
+            const outputsIdx = output.indexOf('Changes to Outputs:');
+            if (outputsIdx !== -1) {
+              const block = output.slice(outputsIdx + 'Changes to Outputs:'.length);
+              for (const line of block.split('\n')) {
+                const m = line.match(/^\s+([+~-])\s+(\S+)\s*=\s*(.+)$/);
+                if (!m) break;
+                const icon = m[1] === '+' ? '➕' : m[1] === '-' ? '🗑️' : '🔄';
+                outputChanges.push({ icon, name: m[2], value: m[3].trim() });
+              }
+            }
+
             const lines = ['#### 🔨 OpenTofu Plan', ''];
 
             if (toDestroy.length || toChange.length || toAdd.length) {
@@ -193,7 +206,16 @@ jobs:
               lines.push('');
             }
 
-            if (!planMatch && !errorMatch) {
+            if (outputChanges.length) {
+              lines.push('**📤 Output changes**', '');
+              lines.push('| Action | Output | Value |', '|---|---|---|');
+              for (const { icon, name, value } of outputChanges) {
+                lines.push(`| ${icon} | \`${name}\` | \`${value}\` |`);
+              }
+              lines.push('');
+            }
+
+            if (!planMatch && !errorMatch && !outputChanges.length) {
               lines.push('**✅ No changes.** Your infrastructure matches the configuration.', '');
             }
 
