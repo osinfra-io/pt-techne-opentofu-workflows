@@ -27,11 +27,3 @@ resource "random_string" "test" {
   length  = 8
   special = false
 }
-
-# Intentional failure for testing job summaries
-
-resource "terraform_data" "fail" {
-  provisioner "local-exec" {
-    command = "exit 1"
-  }
-}
