@@ -87,21 +87,17 @@ jobs:
 
       - name: OpenTofu test
         id: test
-        shell: bash
-        run: |
-          set -o pipefail
-          tofu test --verbose=${{ inputs.opentofu_test_verbose }} -no-color ${{ inputs.opentofu_test_args }} ${{ secrets.opentofu_test_secret_args }} 2>&1 | tee /tmp/tofu-test-output.txt
+        run: tofu test --verbose=${{ inputs.opentofu_test_verbose }} -no-color ${{ inputs.opentofu_test_args }} ${{ secrets.opentofu_test_secret_args }}
 
       - name: OpenTofu summary
         if: always()
         continue-on-error: true
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          OPENTOFU_OUTPUT: ${{ steps.test.outputs.stdout }}
         with:
           script: |
-            const fs = require('fs');
-            const output = fs.existsSync('/tmp/tofu-test-output.txt')
-              ? fs.readFileSync('/tmp/tofu-test-output.txt', 'utf8')
-              : '';
+            const output = process.env.OPENTOFU_OUTPUT || '';
 
             const errorMatch = output.match(/Error:.+/);
 
