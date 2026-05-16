@@ -344,6 +344,25 @@ jobs:
               lines.push(`> ❌ ${errorMatch[0]}`, '');
             }
 
+            // Parse outputs section
+            const outputsStart = output.indexOf('\nOutputs:\n');
+            if (outputsStart !== -1) {
+              const outputsBlock = output.slice(outputsStart + '\nOutputs:\n'.length).trim();
+              const outputEntries = [];
+              for (const line of outputsBlock.split('\n')) {
+                const m = line.match(/^(\S+)\s*=\s*(.+)$/);
+                if (m) outputEntries.push({ name: m[1], value: m[2].trim() });
+              }
+              if (outputEntries.length) {
+                lines.push('**Outputs**', '');
+                lines.push('| Name | Value |', '|---|---|');
+                for (const { name, value } of outputEntries) {
+                  lines.push(`| \`${name}\` | \`${value}\` |`);
+                }
+                lines.push('');
+              }
+            }
+
             lines.push(
               '<details>',
               '<summary>Full Apply Output</summary>',
