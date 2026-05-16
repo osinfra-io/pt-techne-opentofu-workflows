@@ -189,6 +189,7 @@ jobs:
             if (outputsIdx !== -1) {
               const block = output.slice(outputsIdx + 'Changes to Outputs:'.length);
               for (const line of block.split('\n')) {
+                if (!line.trim()) continue;
                 const m = line.match(/^\s+([+~-])\s+(\S+)\s*=\s*(.+)$/);
                 if (!m) break;
                 const icon = m[1] === '+' ? '➕' : m[1] === '-' ? '🗑️' : '🔄';
