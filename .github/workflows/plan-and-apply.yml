@@ -146,7 +146,7 @@ jobs:
       - name: OpenTofu plan
         id: plan
         run: |
-          tofu plan -detailed-exitcode -input=false -out=plan.out -json-into=plan.json ${{ inputs.opentofu_plan_args }} ${{ secrets.opentofu_plan_secret_args }}
+          tofu plan -detailed-exitcode -input=false -out=plan.out ${{ inputs.opentofu_plan_args }} ${{ secrets.opentofu_plan_secret_args }}
 
       - name: OpenTofu show
         id: show
@@ -213,16 +213,6 @@ jobs:
             );
 
             await core.summary.addRaw(lines.join('\n')).write();
-
-      # GitHub - Upload Artifact
-      # https://github.com/marketplace/actions/upload-a-build-artifact
-
-      - name: Upload plan JSON
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: opentofu-plan-${{ inputs.opentofu_workspace }}
-          path: ${{ inputs.working_directory }}/plan.json
-          retention-days: 7
 
     outputs:
       plan-exit-code: ${{ steps.plan.outputs.exitcode }}
@@ -291,7 +281,7 @@ jobs:
 
       - name: OpenTofu apply
         id: apply
-        run: tofu apply -no-color -json-into=apply.json plan.out
+        run: tofu apply -no-color plan.out
 
       - name: OpenTofu summary
         if: always()
@@ -364,12 +354,3 @@ jobs:
 
             await core.summary.addRaw(lines.join('\n')).write();
 
-      # GitHub - Upload Artifact
-      # https://github.com/marketplace/actions/upload-a-build-artifact
-
-      - name: Upload apply JSON
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: opentofu-apply-${{ inputs.opentofu_workspace }}
-          path: ${{ inputs.working_directory }}/apply.json
-          retention-days: 7
