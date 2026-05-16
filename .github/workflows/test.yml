@@ -95,13 +95,9 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           OPENTOFU_OUTPUT: ${{ steps.test.outputs.stdout }}
-          TOFU_VERSION: ${{ inputs.opentofu_version }}
-          TOFU_WORKING_DIRECTORY: ${{ inputs.working_directory }}
         with:
           script: |
             const output = process.env.OPENTOFU_OUTPUT || '';
-            const workingDirectory = process.env.TOFU_WORKING_DIRECTORY || '.';
-            const version = process.env.TOFU_VERSION || '';
 
             const passMatch = output.match(/(\d+) passed/);
             const failMatch = output.match(/(\d+) failed/);
@@ -111,26 +107,38 @@ jobs:
             if (errorMatch || failMatch) {
               emoji = '❌';
             } else {
-              emoji = '✅';
+              emoji = '🧪';
             }
+
+            // Parse per-run results: track current file, then match run lines
+            const runs = [];
+            let currentFile = '';
+            for (const line of output.split('\n')) {
+              const fileMatch = line.match(/^(\S+\.tftest\.hcl)\.\.\./);
+              const runMatch  = line.match(/^\s+run "(.+)"\.\.\. (pass|fail)/);
+              if (fileMatch) currentFile = fileMatch[1];
+              if (runMatch)  runs.push({ file: currentFile, run: runMatch[1], result: runMatch[2] });
+            }
+
+            const passed = parseInt(passMatch ? passMatch[1] : '0');
+            const failed = parseInt(failMatch ? failMatch[1] : '0');
 
             const lines = [
               `### ${emoji} OpenTofu Test`,
               '',
-              '| Input | Value |',
-              '|---|---|',
-              `| 📁 Working Directory | ${workingDirectory} |`,
-              `| ⚙️ OpenTofu Version | ${version} |`,
+              '| ✅ Passed | ❌ Failed |',
+              '|:---:|:---:|',
+              `| **${passed}** | **${failed}** |`,
               '',
             ];
 
-            if (passMatch || failMatch) {
-              lines.push(
-                '| ✅ Passed | ❌ Failed |',
-                '|---|---|',
-                `| ${passMatch ? passMatch[1] : '0'} | ${failMatch ? failMatch[1] : '0'} |`,
-                '',
-              );
+            if (runs.length) {
+              lines.push('| Result | File | Run |', '|---|---|---|');
+              for (const r of runs) {
+                const icon = r.result === 'pass' ? '✅' : '❌';
+                lines.push(`| ${icon} | \`${r.file}\` | \`${r.run}\` |`);
+              }
+              lines.push('');
             }
 
             if (errorMatch) {
