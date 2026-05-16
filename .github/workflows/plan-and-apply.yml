@@ -146,33 +146,25 @@ jobs:
       - name: OpenTofu plan
         id: plan
         run: |
-          tofu plan -detailed-exitcode -input=false -out=plan.out -json-into=plan.json ${{ inputs.opentofu_plan_args }} ${{ secrets.opentofu_plan_secret_args }}
+          set +e
+          tofu plan -detailed-exitcode -input=false -out=plan.out ${{ inputs.opentofu_plan_args }} ${{ secrets.opentofu_plan_secret_args }}
+          exitcode=$?
+          echo "exitcode=$exitcode" >> $GITHUB_OUTPUT
+          if [ $exitcode -eq 1 ]; then exit 1; fi
 
       - name: OpenTofu show
         id: show
         run: tofu show -no-color plan.out
 
       - name: OpenTofu summary
+        if: always()
         continue-on-error: true
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           OPENTOFU_OUTPUT: ${{ steps.show.outputs.stdout }}
         with:
           script: |
-            const tofuOutput = process.env.OPENTOFU_OUTPUT || 'No output available.';
-            core.summary
-              .addCodeBlock(tofuOutput, 'hcl')
-              .write();
-
-      # GitHub - Upload Artifact
-      # https://github.com/marketplace/actions/upload-a-build-artifact
-
-      - name: Upload plan JSON
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: opentofu-plan-${{ inputs.opentofu_workspace }}
-          path: ${{ inputs.working_directory }}/plan.json
-          retention-days: 7
+            await require(`${process.env.GITHUB_WORKSPACE}/.github/scripts/plan-summary.js`)({core});
 
     outputs:
       plan-exit-code: ${{ steps.plan.outputs.exitcode }}
@@ -241,26 +233,15 @@ jobs:
 
       - name: OpenTofu apply
         id: apply
-        run: tofu apply -no-color -json-into=apply.json plan.out
+        run: tofu apply -no-color plan.out
 
       - name: OpenTofu summary
+        if: always()
         continue-on-error: true
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           OPENTOFU_OUTPUT: ${{ steps.apply.outputs.stdout }}
         with:
           script: |
-            const tofuOutput = process.env.OPENTOFU_OUTPUT || 'No output available.';
-            core.summary
-              .addCodeBlock(tofuOutput, 'hcl')
-              .write();
+            await require(`${process.env.GITHUB_WORKSPACE}/.github/scripts/apply-summary.js`)({core});
 
-      # GitHub - Upload Artifact
-      # https://github.com/marketplace/actions/upload-a-build-artifact
-
-      - name: Upload apply JSON
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: opentofu-apply-${{ inputs.opentofu_workspace }}
-          path: ${{ inputs.working_directory }}/apply.json
-          retention-days: 7

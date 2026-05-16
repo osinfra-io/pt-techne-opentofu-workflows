@@ -19,3 +19,11 @@ module "google_storage_bucket" {
 resource "random_id" "test" {
   byte_length = 4
 }
+
+# Random String Resource
+# https://search.opentofu.org/provider/hashicorp/random/latest/docs/resources/string
+
+resource "random_string" "test" {
+  length  = 8
+  special = false
+}
