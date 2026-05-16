@@ -304,30 +304,42 @@ jobs:
             const applyMatch = output.match(/Apply complete! Resources: (\d+) added, (\d+) changed, (\d+) destroyed/);
             const errorMatch = output.match(/Error:.+/);
 
-            const added = [];
-            const changed = [];
-            const destroyed = [];
+            // Track resources that started and those that completed
+            const started = {};
+            const completed = new Set();
 
             for (const line of output.split('\n')) {
-              const created  = line.match(/^(.+): Creation complete/);
-              const modified = line.match(/^(.+): Modifications complete/);
-              const destroy  = line.match(/^(.+): Destruction complete/);
-              if (created)  added.push(created[1].trim());
-              if (modified) changed.push(modified[1].trim());
-              if (destroy)  destroyed.push(destroy[1].trim());
+              const creating   = line.match(/^(.+): Creating\.\.\./);
+              const modifying  = line.match(/^(.+): Modifying\.\.\./);
+              const destroying = line.match(/^(.+): Destroying\.\.\./);
+              const created    = line.match(/^(.+): Creation complete/);
+              const modified   = line.match(/^(.+): Modifications complete/);
+              const destroy    = line.match(/^(.+): Destruction complete/);
+              if (creating)   started[creating[1].trim()]   = 'added';
+              if (modifying)  started[modifying[1].trim()]  = 'changed';
+              if (destroying) started[destroying[1].trim()] = 'destroyed';
+              if (created)    completed.add(created[1].trim());
+              if (modified)   completed.add(modified[1].trim());
+              if (destroy)    completed.add(destroy[1].trim());
             }
+
+            const actionOrder = { destroyed: 0, changed: 1, added: 2 };
+            const actionEmoji = { added: '➕', changed: '🔄', destroyed: '🗑️' };
+
+            const rows = Object.entries(started).sort(([, a], [, b]) => actionOrder[a] - actionOrder[b]);
 
             const lines = ['### 🚀 OpenTofu Apply', ''];
 
-            if (destroyed.length || changed.length || added.length) {
-              lines.push('| Action | Resource |', '|---|---|');
-              for (const r of destroyed) lines.push(`| 🗑️ | \`${r}\` |`);
-              for (const r of changed)   lines.push(`| 🔄 | \`${r}\` |`);
-              for (const r of added)     lines.push(`| ➕ | \`${r}\` |`);
+            if (rows.length) {
+              lines.push('| Status | Action | Resource |', '|---|---|---|');
+              for (const [r, action] of rows) {
+                const ok = completed.has(r);
+                lines.push(`| ${ok ? '✅' : '❌'} | ${actionEmoji[action]} | \`${r}\` |`);
+              }
               lines.push('');
             }
 
-            if (!applyMatch && !errorMatch) {
+            if (!applyMatch && !errorMatch && !rows.length) {
               lines.push('**✅ No changes.** Your infrastructure matches the configuration.', '');
             }
 
