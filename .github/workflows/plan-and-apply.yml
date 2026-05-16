@@ -157,23 +157,12 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           OPENTOFU_OUTPUT: ${{ steps.show.outputs.stdout }}
-          TOFU_ENVIRONMENT: ${{ inputs.github_environment }}
         with:
           script: |
             const output = process.env.OPENTOFU_OUTPUT || '';
-            const environment = process.env.TOFU_ENVIRONMENT || '';
 
             const planMatch = output.match(/Plan: (\d+) to add, (\d+) to change, (\d+) to destroy/);
             const errorMatch = output.match(/Error:.+/);
-
-            let emoji;
-            if (errorMatch) {
-              emoji = '❌';
-            } else if (planMatch) {
-              emoji = '🔨';
-            } else {
-              emoji = '✅';
-            }
 
             const toAdd = [];
             const toChange = [];
@@ -191,25 +180,13 @@ jobs:
               }
             }
 
-            const lines = [
-              `### ${emoji} OpenTofu Plan — ${environment}`,
-              '',
-            ];
+            const lines = ['### 🔨 OpenTofu Plan', ''];
 
-            if (planMatch) {
-              lines.push(
-                '| ➕ Add | 🔄 Change | 🗑️ Destroy |',
-                '|:---:|:---:|:---:|',
-                `| **${planMatch[1]}** | **${planMatch[2]}** | **${planMatch[3]}** |`,
-                '',
-              );
-            }
-
-            if (toAdd.length || toChange.length || toDestroy.length) {
+            if (toDestroy.length || toChange.length || toAdd.length) {
               lines.push('| Action | Resource |', '|---|---|');
-              for (const r of toAdd)     lines.push(`| ➕ | \`${r}\` |`);
-              for (const r of toChange)  lines.push(`| 🔄 | \`${r}\` |`);
               for (const r of toDestroy) lines.push(`| 🗑️ | \`${r}\` |`);
+              for (const r of toChange)  lines.push(`| 🔄 | \`${r}\` |`);
+              for (const r of toAdd)     lines.push(`| ➕ | \`${r}\` |`);
               lines.push('');
             }
 
@@ -318,21 +295,12 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           OPENTOFU_OUTPUT: ${{ steps.apply.outputs.stdout }}
-          TOFU_ENVIRONMENT: ${{ inputs.github_environment }}
         with:
           script: |
             const output = process.env.OPENTOFU_OUTPUT || '';
-            const environment = process.env.TOFU_ENVIRONMENT || '';
 
             const applyMatch = output.match(/Apply complete! Resources: (\d+) added, (\d+) changed, (\d+) destroyed/);
             const errorMatch = output.match(/Error:.+/);
-
-            let emoji;
-            if (errorMatch) {
-              emoji = '❌';
-            } else {
-              emoji = '🚀';
-            }
 
             const added = [];
             const changed = [];
@@ -347,25 +315,13 @@ jobs:
               if (destroy)  destroyed.push(destroy[1].trim());
             }
 
-            const lines = [
-              `### ${emoji} OpenTofu Apply — ${environment}`,
-              '',
-            ];
+            const lines = ['### 🚀 OpenTofu Apply', ''];
 
-            if (applyMatch) {
-              lines.push(
-                '| ➕ Added | 🔄 Changed | 🗑️ Destroyed |',
-                '|:---:|:---:|:---:|',
-                `| **${applyMatch[1]}** | **${applyMatch[2]}** | **${applyMatch[3]}** |`,
-                '',
-              );
-            }
-
-            if (added.length || changed.length || destroyed.length) {
+            if (destroyed.length || changed.length || added.length) {
               lines.push('| Action | Resource |', '|---|---|');
-              for (const r of added)     lines.push(`| ➕ | \`${r}\` |`);
-              for (const r of changed)   lines.push(`| 🔄 | \`${r}\` |`);
               for (const r of destroyed) lines.push(`| 🗑️ | \`${r}\` |`);
+              for (const r of changed)   lines.push(`| 🔄 | \`${r}\` |`);
+              for (const r of added)     lines.push(`| ➕ | \`${r}\` |`);
               lines.push('');
             }
 
