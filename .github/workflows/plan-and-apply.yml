@@ -181,7 +181,7 @@ jobs:
               }
             }
 
-            const lines = ['### 🔨 OpenTofu Plan', ''];
+            const lines = ['#### 🔨 OpenTofu Plan', ''];
 
             if (toDestroy.length || toChange.length || toAdd.length) {
               lines.push('| Action | Resource |', '|---|---|');
@@ -328,7 +328,7 @@ jobs:
 
             const rows = Object.entries(started).sort(([, a], [, b]) => actionOrder[a] - actionOrder[b]);
 
-            const lines = ['### 🚀 OpenTofu Apply', ''];
+            const lines = ['#### 🚀 OpenTofu Apply', ''];
 
             if (rows.length) {
               lines.push('| Action | Resource | Status |', '|---|---|---|');

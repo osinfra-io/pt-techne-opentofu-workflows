@@ -112,7 +112,7 @@ jobs:
             }
 
             const lines = [
-              '### 🔨 OpenTofu Test',
+              '#### 🔨 OpenTofu Test',
               '',
             ];
 
