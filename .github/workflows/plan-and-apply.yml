@@ -187,9 +187,9 @@ jobs:
 
             if (toDestroy.length || toChange.length || toAdd.length) {
               lines.push('| Action | Resource |', '|---|---|');
-              for (const r of toDestroy) lines.push(`| 🗑️ | \`${r}\` |`);
-              for (const r of toChange)  lines.push(`| 🔄 | \`${r}\` |`);
-              for (const r of toAdd)     lines.push(`| ➕ | \`${r}\` |`);
+              for (const r of toDestroy) lines.push(`| 🗑️ Destroy | \`${r}\` |`);
+              for (const r of toChange)  lines.push(`| 🔄 Change  | \`${r}\` |`);
+              for (const r of toAdd)     lines.push(`| ➕ Add     | \`${r}\` |`);
               lines.push('');
             }
 
@@ -302,33 +302,36 @@ jobs:
             const started = {};
             const completed = new Set();
 
+            const durations = {};
+
             for (const line of output.split('\n')) {
               const creating   = line.match(/^(.+): Creating\.\.\./);
               const modifying  = line.match(/^(.+): Modifying\.\.\./);
               const destroying = line.match(/^(.+): Destroying\.\.\./);
-              const created    = line.match(/^(.+): Creation complete/);
-              const modified   = line.match(/^(.+): Modifications complete/);
-              const destroy    = line.match(/^(.+): Destruction complete/);
+              const created    = line.match(/^(.+): Creation complete after (\S+)/);
+              const modified   = line.match(/^(.+): Modifications complete after (\S+)/);
+              const destroy    = line.match(/^(.+): Destruction complete after (\S+)/);
               if (creating)   started[creating[1].trim()]   = 'added';
               if (modifying)  started[modifying[1].trim()]  = 'changed';
               if (destroying) started[destroying[1].trim()] = 'destroyed';
-              if (created)    completed.add(created[1].trim());
-              if (modified)   completed.add(modified[1].trim());
-              if (destroy)    completed.add(destroy[1].trim());
+              if (created)  { completed.add(created[1].trim());  durations[created[1].trim()]  = created[2]; }
+              if (modified) { completed.add(modified[1].trim()); durations[modified[1].trim()] = modified[2]; }
+              if (destroy)  { completed.add(destroy[1].trim());  durations[destroy[1].trim()]  = destroy[2]; }
             }
 
             const actionOrder = { destroyed: 0, changed: 1, added: 2 };
-            const actionEmoji = { added: '➕', changed: '🔄', destroyed: '🗑️' };
+            const actionLabel = { added: '➕ Add', changed: '🔄 Change', destroyed: '🗑️ Destroy' };
 
             const rows = Object.entries(started).sort(([, a], [, b]) => actionOrder[a] - actionOrder[b]);
 
             const lines = ['#### 🚀 OpenTofu Apply', ''];
 
             if (rows.length) {
-              lines.push('| Action | Resource | Status |', '|---|---|---|');
+              lines.push('| Action | Resource | Duration | Status |', '|---|---|---|---|');
               for (const [r, action] of rows) {
-                const ok = completed.has(r);
-                lines.push(`| ${actionEmoji[action]} | \`${r}\` | ${ok ? '✅' : '❌'} |`);
+                const ok  = completed.has(r);
+                const dur = durations[r] ? durations[r] : '—';
+                lines.push(`| ${actionLabel[action]} | \`${r}\` | ${dur} | ${ok ? '✅' : '❌'} |`);
               }
               lines.push('');
             }
