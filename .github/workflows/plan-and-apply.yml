@@ -162,6 +162,8 @@ jobs:
           script: |
             const output = process.env.OPENTOFU_OUTPUT || '';
 
+            if (!output.trim()) { return; }
+
             const planMatch = output.match(/Plan: (\d+) to add, (\d+) to change, (\d+) to destroy/);
             const errorMatch = output.match(/Error:.+/);
 
@@ -300,6 +302,8 @@ jobs:
         with:
           script: |
             const output = process.env.OPENTOFU_OUTPUT || '';
+
+            if (!output.trim()) { return; }
 
             const applyMatch = output.match(/Apply complete! Resources: (\d+) added, (\d+) changed, (\d+) destroyed/);
             const errorMatch = output.match(/Error:.+/);
