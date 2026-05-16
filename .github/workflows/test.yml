@@ -103,8 +103,11 @@ jobs:
             const failMatch = output.match(/(\d+) failed/);
             const errorMatch = output.match(/Error:.+/);
 
+            const passed = parseInt(passMatch ? passMatch[1] : '0');
+            const failed = parseInt(failMatch ? failMatch[1] : '0');
+
             let emoji;
-            if (errorMatch || failMatch) {
+            if (errorMatch || failed > 0) {
               emoji = '❌';
             } else {
               emoji = '🧪';
@@ -119,9 +122,6 @@ jobs:
               if (fileMatch) currentFile = fileMatch[1];
               if (runMatch)  runs.push({ file: currentFile, run: runMatch[1], result: runMatch[2] });
             }
-
-            const passed = parseInt(passMatch ? passMatch[1] : '0');
-            const failed = parseInt(failMatch ? failMatch[1] : '0');
 
             const lines = [
               `### ${emoji} OpenTofu Test`,
