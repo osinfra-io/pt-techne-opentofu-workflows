@@ -172,8 +172,8 @@ jobs:
             const toDestroy = [];
 
             for (const line of output.split('\n')) {
-              const m = line.match(/# (.+) will be (created|destroyed|updated in-place)/);
-              const r = line.match(/# (.+) must be replaced/);
+              const m = line.match(/# (\S+) will be (created|destroyed|updated in-place)/);
+              const r = line.match(/# (\S+).*must be replaced/);
               if (m) {
                 if (m[2] === 'created') toAdd.push(m[1]);
                 else if (m[2] === 'destroyed') toDestroy.push(m[1]);
