@@ -87,22 +87,26 @@ jobs:
 
       - name: OpenTofu test
         id: test
-        run: tofu test --verbose=${{ inputs.opentofu_test_verbose }} -no-color ${{ inputs.opentofu_test_args }} ${{ secrets.opentofu_test_secret_args }}
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          tofu test --verbose=${{ inputs.opentofu_test_verbose }} -no-color ${{ inputs.opentofu_test_args }} ${{ secrets.opentofu_test_secret_args }} 2>&1 | tee "$RUNNER_TEMP/tofu-test.txt"
+          exit ${PIPESTATUS[0]}
 
       - name: OpenTofu summary
         if: always()
         continue-on-error: true
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        env:
-          OPENTOFU_STDOUT: ${{ steps.test.outputs.stdout }}
-          OPENTOFU_STDERR: ${{ steps.test.outputs.stderr }}
         with:
           script: |
-            const output = (process.env.OPENTOFU_STDOUT || '') + (process.env.OPENTOFU_STDERR || '');
+            const fs = require('fs');
+            const outputFile = `${process.env.RUNNER_TEMP}/tofu-test.txt`;
+            const output = fs.existsSync(outputFile) ? fs.readFileSync(outputFile, 'utf8') : '';
 
             const errorMatch = output.match(/Error:.+/);
 
-            // Parse per-runresults: track current file, then match run lines
+            // Parse per-run results: track current file, then match run lines
             const runs = [];
             let currentFile = '';
             for (const line of output.split('\n')) {
@@ -142,3 +146,7 @@ jobs:
             );
 
             await core.summary.addRaw(lines.join('\n')).write();
+
+      - name: OpenTofu test result
+        if: steps.test.outcome == 'failure'
+        run: exit 1
