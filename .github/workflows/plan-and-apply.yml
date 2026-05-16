@@ -331,10 +331,10 @@ jobs:
             const lines = ['### 🚀 OpenTofu Apply', ''];
 
             if (rows.length) {
-              lines.push('| Status | Action | Resource |', '|---|---|---|');
+              lines.push('| Action | Resource | Status |', '|---|---|---|');
               for (const [r, action] of rows) {
                 const ok = completed.has(r);
-                lines.push(`| ${ok ? '✅' : '❌'} | ${actionEmoji[action]} | \`${r}\` |`);
+                lines.push(`| ${actionEmoji[action]} | \`${r}\` | ${ok ? '✅' : '❌'} |`);
               }
               lines.push('');
             }
