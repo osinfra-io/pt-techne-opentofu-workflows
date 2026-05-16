@@ -94,10 +94,11 @@ jobs:
         continue-on-error: true
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          OPENTOFU_OUTPUT: ${{ steps.test.outputs.stdout }}
+          OPENTOFU_STDOUT: ${{ steps.test.outputs.stdout }}
+          OPENTOFU_STDERR: ${{ steps.test.outputs.stderr }}
         with:
           script: |
-            const output = process.env.OPENTOFU_OUTPUT || '';
+            const output = (process.env.OPENTOFU_STDOUT || '') + (process.env.OPENTOFU_STDERR || '');
 
             const errorMatch = output.match(/Error:.+/);
 
