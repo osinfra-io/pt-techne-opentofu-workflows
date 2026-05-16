@@ -5,7 +5,9 @@ module.exports = async ({ core }) => {
 
   if (!output.trim()) { return; }
 
-  const errorMatch = output.match(/Error:.+/);
+  const escape = (s) => String(s).replace(/[`|\\]/g, '\\$&');
+
+  const errorMatch= output.match(/Error:.+/);
 
   // Parse per-run results: track current file, then match run lines
   const runs = [];
@@ -14,7 +16,7 @@ module.exports = async ({ core }) => {
     const fileMatch = line.match(/^(\S+\.tftest\.hcl)\.\.\./);
     const runMatch  = line.match(/^\s+run "(.+)"\.\.\. (pass|fail)/);
     if (fileMatch) currentFile = fileMatch[1];
-    if (runMatch)  runs.push({ file: currentFile, run: runMatch[1], result: runMatch[2] });
+    if (runMatch && currentFile) runs.push({ file: currentFile, run: runMatch[1], result: runMatch[2] });
   }
 
   const lines = [
@@ -26,7 +28,7 @@ module.exports = async ({ core }) => {
     lines.push('| Result | File | Run |', '|---|---|---|');
     for (const r of runs) {
       const icon = r.result === 'pass' ? '✅' : '❌';
-      lines.push(`| ${icon} | \`${r.file}\` | \`${r.run}\` |`);
+      lines.push(`| ${icon} | \`${escape(r.file)}\` | \`${escape(r.run)}\` |`);
     }
     lines.push('');
   }

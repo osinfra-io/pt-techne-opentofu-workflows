@@ -3,7 +3,9 @@ module.exports = async ({ core }) => {
 
   if (!output.trim()) { return; }
 
-  const applyMatch = output.match(/Apply complete! Resources: (\d+) added, (\d+) changed, (\d+) destroyed/);
+  const escape = (s) => String(s).replace(/[`|\\]/g, '\\$&');
+
+  const applyMatch= output.match(/Apply complete! Resources: (\d+) added, (\d+) changed, (\d+) destroyed/);
   const errorMatch = output.match(/Error:.+/);
 
   // Track resources that started and those that completed
@@ -37,8 +39,8 @@ module.exports = async ({ core }) => {
     lines.push('| Action | Resource | Duration | Status |', '|---|---|---|---|');
     for (const [r, action] of rows) {
       const ok  = completed.has(r);
-      const dur = durations[r] ? durations[r] : '—';
-      lines.push(`| ${actionLabel[action]} | \`${r}\` | ${dur} | ${ok ? '✅' : '❌'} |`);
+      const dur = durations[r] ? escape(durations[r]) : '—';
+      lines.push(`| ${actionLabel[action]} | \`${escape(r)}\` | ${dur} | ${ok ? '✅' : '❌'} |`);
     }
     lines.push('');
   }
@@ -64,7 +66,7 @@ module.exports = async ({ core }) => {
       lines.push('**Outputs**', '');
       lines.push('| Name | Value |', '|---|---|');
       for (const { name, value } of outputEntries) {
-        lines.push(`| \`${name}\` | \`${value}\` |`);
+        lines.push(`| \`${escape(name)}\` | \`${escape(value)}\` |`);
       }
       lines.push('');
     }

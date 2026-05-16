@@ -3,7 +3,9 @@ module.exports = async ({ core }) => {
 
   if (!output.trim()) { return; }
 
-  const planMatch = output.match(/Plan: (\d+) to add, (\d+) to change, (\d+) to destroy/);
+  const escape = (s) => String(s).replace(/[`|\\]/g, '\\$&');
+
+  const planMatch= output.match(/Plan: (\d+) to add, (\d+) to change, (\d+) to destroy/);
   const errorMatch = output.match(/Error:.+/);
 
   const toAdd = [];
@@ -40,9 +42,9 @@ module.exports = async ({ core }) => {
 
   if (toDestroy.length || toChange.length || toAdd.length) {
     lines.push('| Action | Resource |', '|---|---|');
-    for (const r of toDestroy) lines.push(`| 🗑️ Destroy | \`${r}\` |`);
-    for (const r of toChange)  lines.push(`| 🔄 Change  | \`${r}\` |`);
-    for (const r of toAdd)     lines.push(`| ➕ Add     | \`${r}\` |`);
+    for (const r of toDestroy) lines.push(`| 🗑️ Destroy | \`${escape(r)}\` |`);
+    for (const r of toChange)  lines.push(`| 🔄 Change  | \`${escape(r)}\` |`);
+    for (const r of toAdd)     lines.push(`| ➕ Add     | \`${escape(r)}\` |`);
     lines.push('');
   }
 
@@ -50,7 +52,7 @@ module.exports = async ({ core }) => {
     lines.push('**📤 Output changes**', '');
     lines.push('| Action | Output | Value |', '|---|---|---|');
     for (const { icon, name, value } of outputChanges) {
-      lines.push(`| ${icon} | \`${name}\` | \`${value}\` |`);
+      lines.push(`| ${icon} | \`${escape(name)}\` | \`${escape(value)}\` |`);
     }
     lines.push('');
   }
