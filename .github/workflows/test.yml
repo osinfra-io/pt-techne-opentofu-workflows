@@ -99,21 +99,9 @@ jobs:
           script: |
             const output = process.env.OPENTOFU_OUTPUT || '';
 
-            const passMatch = output.match(/(\d+) passed/);
-            const failMatch = output.match(/(\d+) failed/);
             const errorMatch = output.match(/Error:.+/);
 
-            const passed = parseInt(passMatch ? passMatch[1] : '0');
-            const failed = parseInt(failMatch ? failMatch[1] : '0');
-
-            let emoji;
-            if (errorMatch || failed > 0) {
-              emoji = '❌';
-            } else {
-              emoji = '🧪';
-            }
-
-            // Parse per-run results: track current file, then match run lines
+            // Parse per-runresults: track current file, then match run lines
             const runs = [];
             let currentFile = '';
             for (const line of output.split('\n')) {
@@ -124,11 +112,7 @@ jobs:
             }
 
             const lines = [
-              `### ${emoji} OpenTofu Test`,
-              '',
-              '| ✅ Passed | ❌ Failed |',
-              '|:---:|:---:|',
-              `| **${passed}** | **${failed}** |`,
+              '### 🔨 OpenTofu Test',
               '',
             ];
 
