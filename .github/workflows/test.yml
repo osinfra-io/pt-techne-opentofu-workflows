@@ -133,7 +133,7 @@ jobs:
               '<details>',
               '<summary>Full Test Output</summary>',
               '',
-              '```',
+              '```hcl',
               output,
               '```',
               '',
