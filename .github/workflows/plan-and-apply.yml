@@ -154,19 +154,20 @@ jobs:
 
       - name: OpenTofu show
         id: show
-        run: tofu show -no-color plan.out
+        run: tofu show -no-color plan.out | tee "$RUNNER_TEMP/tofu-show.txt"
 
       - name: OpenTofu summary
         if: always()
         continue-on-error: true
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        env:
-          OPENTOFU_OUTPUT: ${{ steps.show.outputs.stdout }}
         with:
           script: |
-            const output = process.env.OPENTOFU_OUTPUT || '';
+            const fs = require('fs');
+            const outputFile = `${process.env.RUNNER_TEMP}/tofu-show.txt`;
+            const output = fs.existsSync(outputFile) ? fs.readFileSync(outputFile, 'utf8') : '';
             if (!output.trim()) { return; }
             const escape = (s) => String(s).replace(/[`|\\]/g, '\\$&');
+            const cell = (s) => escape(String(s).replace(/\r?\n/g, '\\n'));
             const planMatch = output.match(/Plan: (\d+) to add, (\d+) to change, (\d+) to destroy/);
             const errorMatch = output.match(/Error:.+/);
             const toAdd = [], toChange = [], toDestroy = [];
@@ -203,7 +204,7 @@ jobs:
               lines.push('**📤 Output changes**', '');
               lines.push('| Action | Output | Value |', '|---|---|---|');
               for (const { icon, name, value } of outputChanges) {
-                lines.push(`| ${icon} | \`${escape(name)}\` | \`${escape(value)}\` |`);
+                lines.push(`| ${icon} | \`${escape(name)}\` | \`${cell(value)}\` |`);
               }
               lines.push('');
             }
@@ -281,19 +282,20 @@ jobs:
 
       - name: OpenTofu apply
         id: apply
-        run: tofu apply -no-color plan.out
+        run: tofu apply -no-color plan.out 2>&1 | tee "$RUNNER_TEMP/tofu-apply.txt"
 
       - name: OpenTofu summary
         if: always()
         continue-on-error: true
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        env:
-          OPENTOFU_OUTPUT: ${{ steps.apply.outputs.stdout }}
         with:
           script: |
-            const output = process.env.OPENTOFU_OUTPUT || '';
+            const fs = require('fs');
+            const outputFile = `${process.env.RUNNER_TEMP}/tofu-apply.txt`;
+            const output = fs.existsSync(outputFile) ? fs.readFileSync(outputFile, 'utf8') : '';
             if (!output.trim()) { return; }
             const escape = (s) => String(s).replace(/[`|\\]/g, '\\$&');
+            const cell = (s) => escape(String(s).replace(/\r?\n/g, '\\n'));
             const applyMatch = output.match(/Apply complete! Resources: (\d+) added, (\d+) changed, (\d+) destroyed/);
             const errorMatch = output.match(/Error:.+/);
             const started = {}, completed = new Set(), durations = {};
@@ -339,7 +341,7 @@ jobs:
                 lines.push('**Outputs**', '');
                 lines.push('| Name | Value |', '|---|---|');
                 for (const { name, value } of outputEntries) {
-                  lines.push(`| \`${escape(name)}\` | \`${escape(value)}\` |`);
+                  lines.push(`| \`${escape(name)}\` | \`${cell(value)}\` |`);
                 }
                 lines.push('');
               }
