@@ -221,7 +221,7 @@ jobs:
   apply:
     name: OpenTofu apply
     needs: plan
-    if: needs.plan.outputs.plan-exit-code == '2'
+    if: needs.plan.outputs.plan-exit-code == 2
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.github_environment }}
