@@ -170,7 +170,8 @@ jobs:
             const errorMatch = output.match(/Error:.+/);
             const lines = [];
             if (planMatch) {
-              lines.push(`**${planMatch[0]}**`, '');
+              lines.push('| ➕ Add | 🔄 Change | 🗑️ Destroy |', '|---|---|---|');
+              lines.push(`| ${planMatch[1]} | ${planMatch[2]} | ${planMatch[3]} |`, '');
             } else if (!errorMatch) {
               lines.push('**✅ No changes.** Your infrastructure matches the configuration.', '');
             }
