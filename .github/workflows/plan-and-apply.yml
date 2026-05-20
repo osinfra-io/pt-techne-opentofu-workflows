@@ -168,7 +168,7 @@ jobs:
             if (!output.trim()) { return; }
             const planMatch = output.match(/Plan: (\d+) to add, (\d+) to change, (\d+) to destroy/);
             const errorMatch = output.match(/Error:.+/);
-            const lines = ['#### 🔨 OpenTofu Plan', ''];
+            const lines = [];
             if (planMatch) {
               lines.push(`**${planMatch[0]}**`, '');
             } else if (!errorMatch) {
@@ -279,7 +279,7 @@ jobs:
             const actionOrder = { destroyed: 0, changed: 1, added: 2 };
             const actionLabel = { added: '➕ Add', changed: '🔄 Change', destroyed: '🗑️ Destroy' };
             const rows = Object.entries(started).sort(([, a], [, b]) => actionOrder[a] - actionOrder[b]);
-            const lines = ['#### 🚀 OpenTofu Apply', ''];
+            const lines = [];
             if (rows.length) {
               lines.push('| Action | Resource | Duration | Status |', '|---|---|---|---|');
               for (const [r, action] of rows) {

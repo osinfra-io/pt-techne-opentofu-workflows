@@ -114,7 +114,7 @@ jobs:
               if (fileMatch) currentFile = fileMatch[1];
               if (runMatch && currentFile) runs.push({ file: currentFile, run: runMatch[1], result: runMatch[2] });
             }
-            const lines = ['#### 🔨 OpenTofu Test', ''];
+            const lines = [];
             if (runs.length) {
               lines.push('| Result | File | Run |', '|---|---|---|');
               for (const r of runs) {
