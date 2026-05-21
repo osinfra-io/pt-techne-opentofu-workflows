@@ -149,6 +149,14 @@ jobs:
           tofu plan -detailed-exitcode -input=false -out=plan.out
           ${{ inputs.opentofu_plan_args }} ${{ secrets.opentofu_plan_secret_args }}
 
+      - name: Debug plan outputs
+        if: always()
+        run: |
+          echo "exitcode output = ${{ steps.plan.outputs.exitcode }}"
+          echo "outcome = ${{ steps.plan.outcome }}"
+          echo "conclusion = ${{ steps.plan.conclusion }}"
+          cat "$GITHUB_OUTPUT" || true
+
       - name: OpenTofu show
         id: show
         run: tofu show -no-color plan.out | tee "$RUNNER_TEMP/tofu-show.txt"
