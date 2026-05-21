@@ -168,7 +168,8 @@ jobs:
             if (!output.trim()) { return; }
             const planMatch = output.match(/Plan: (\d+) to add, (\d+) to change, (\d+) to destroy/);
             const errorMatch = output.match(/Error:.+/);
-            const lines = [];
+            const logo = '<picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-dark.png"><img src="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-light.png" height="24"></picture>';
+            const lines = [logo, ''];
             if (planMatch) {
               lines.push('| ➕ Add | 🔄 Change | 🗑️ Destroy |', '|---|---|---|');
               lines.push(`| ${planMatch[1]} | ${planMatch[2]} | ${planMatch[3]} |`, '');
@@ -280,7 +281,8 @@ jobs:
             const actionOrder = { destroyed: 0, changed: 1, added: 2 };
             const actionLabel = { added: '➕ Add', changed: '🔄 Change', destroyed: '🗑️ Destroy' };
             const rows = Object.entries(started).sort(([, a], [, b]) => actionOrder[a] - actionOrder[b]);
-            const lines = [];
+            const logo = '<picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-dark.png"><img src="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-light.png" height="24"></picture>';
+            const lines = [logo, ''];
             if (rows.length) {
               lines.push('| Action | Resource | Duration | Status |', '|---|---|---|---|');
               for (const [r, action] of rows) {
