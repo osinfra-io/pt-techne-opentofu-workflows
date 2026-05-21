@@ -261,12 +261,30 @@ jobs:
             const logo = '<picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-dark.png"><img src="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-light.png" height="24"></picture>';
             const lines = [logo, ''];
             if (applyMatch) {
-              lines.push('| ➕ Add | 🔄 Change | 🗑️ Destroy |', '|---|---|---|');
-              lines.push(`| ${applyMatch[1]} | ${applyMatch[2]} | ${applyMatch[3]} |`, '');
-            } else if (!errorMatch) {
-              lines.push('**✅ No changes.** Your infrastructure matches the configuration.', '');
+              lines.push(`**✅ Apply complete!** ${applyMatch[1]} added, ${applyMatch[2]} changed, ${applyMatch[3]} destroyed.`, '');
+            } else if (errorMatch) {
+              const succeeded = (output.match(/Creation complete/g) || []).length
+                + (output.match(/Modifications complete/g) || []).length
+                + (output.match(/Destruction complete/g) || []).length;
+              const failed = (output.match(/Error:/g) || []).length;
+              lines.push(`**❌ Apply failed.** ${succeeded} succeeded, ${failed} errored.`, '');
+              lines.push(`> ${errorMatch[0]}`, '');
             }
-            if (errorMatch) { lines.push(`> ❌ ${errorMatch[0]}`, ''); }
+            const outputsStart = output.indexOf('\nOutputs:\n');
+            if (outputsStart !== -1) {
+              const outputEntries = [];
+              for (const line of output.slice(outputsStart + '\nOutputs:\n'.length).trim().split('\n')) {
+                const m = line.match(/^(\S+)\s*=\s*(.+)$/);
+                if (m) outputEntries.push({ name: m[1], value: m[2].trim() });
+              }
+              if (outputEntries.length) {
+                lines.push('**Outputs**', '', '| Name | Value |', '|---|---|');
+                for (const { name, value } of outputEntries) {
+                  lines.push(`| \`${name}\` | \`${value}\` |`);
+                }
+                lines.push('');
+              }
+            }
             lines.push('<details>', '<summary>Full Apply Output</summary>', '', '```hcl', output, '```', '', '</details>');
             await core.summary.addRaw(lines.join('\n')).write();
 
