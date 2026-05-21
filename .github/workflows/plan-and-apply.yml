@@ -145,9 +145,12 @@ jobs:
 
       - name: OpenTofu plan
         id: plan
+        env:
+          OPENTOFU_PLAN_ARGS: ${{ inputs.opentofu_plan_args }}
+          OPENTOFU_PLAN_SECRET_ARGS: ${{ secrets.opentofu_plan_secret_args }}
         run: >-
           tofu plan -detailed-exitcode -input=false -out=plan.out
-          ${{ inputs.opentofu_plan_args }} ${{ secrets.opentofu_plan_secret_args }}
+          $OPENTOFU_PLAN_ARGS $OPENTOFU_PLAN_SECRET_ARGS
 
       - name: OpenTofu show
         id: show
