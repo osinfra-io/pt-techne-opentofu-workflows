@@ -24,6 +24,6 @@ resource "random_id" "test" {
 # https://search.opentofu.org/provider/hashicorp/random/latest/docs/resources/string
 
 resource "random_string" "test" {
-  length  = 8
+  length  = 4
   special = false
 }

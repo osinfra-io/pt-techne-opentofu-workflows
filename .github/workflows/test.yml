@@ -114,7 +114,8 @@ jobs:
               if (fileMatch) currentFile = fileMatch[1];
               if (runMatch && currentFile) runs.push({ file: currentFile, run: runMatch[1], result: runMatch[2] });
             }
-            const lines = ['#### 🔨 OpenTofu Test', ''];
+            const logo = '<picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-dark.png"><img src="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-light.png" height="24"></picture>';
+            const lines = [logo, ''];
             if (runs.length) {
               lines.push('| Result | File | Run |', '|---|---|---|');
               for (const r of runs) {
