@@ -17,13 +17,13 @@ module "google_storage_bucket" {
 # https://search.opentofu.org/provider/hashicorp/random/latest/docs/resources/id
 
 resource "random_id" "test" {
-  byte_length = 6
+  byte_length = 4
 }
 
 # Random String Resource
 # https://search.opentofu.org/provider/hashicorp/random/latest/docs/resources/string
 
 resource "random_string" "test" {
-  length  = 8
+  length  = 4
   special = false
 }
