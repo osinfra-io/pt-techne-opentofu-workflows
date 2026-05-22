@@ -18,6 +18,10 @@ module "google_storage_bucket" {
 
 resource "random_id" "test" {
   byte_length = 4
+
+  keepers = {
+    ts = plantimestamp()
+  }
 }
 
 # Random String Resource
