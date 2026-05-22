@@ -292,18 +292,17 @@ jobs:
               }
               if (current) outputEntries.push(current);
               if (outputEntries.length) {
-                const simple = outputEntries.filter(e => e.lines.length === 1);
-                const complex = outputEntries.filter(e => e.lines.length > 1);
-                if (simple.length) {
-                  lines.push('**Outputs**', '', '| Name | Value |', '|---|---|');
-                  for (const { name, lines: vals } of simple) {
-                    lines.push(`| \`${name}\` | \`${vals[0]}\` |`);
+                lines.push('**Outputs**', '', '<table>', '<tr><th>Name</th><th>Value</th></tr>');
+                for (const { name, lines: vals } of outputEntries) {
+                  const value = vals.join('\n');
+                  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                  if (vals.length === 1) {
+                    lines.push(`<tr><td><code>${name}</code></td><td><code>${esc(value)}</code></td></tr>`);
+                  } else {
+                    lines.push(`<tr><td><code>${name}</code></td><td><details><summary><i>Show value</i></summary><pre>${esc(`${name} = ${value}`)}</pre></details></td></tr>`);
                   }
-                  lines.push('');
                 }
-                for (const { name, lines: vals } of complex) {
-                  lines.push(`<details>`, `<summary><b>Output:</b> <code>${name}</code></summary>`, '', '```hcl', `${name} = ${vals.join('\n')}`, '```', '', '</details>', '');
-                }
+                lines.push('</table>', '');
               }
             }
             lines.push('<details>', '<summary>Full Apply Output</summary>', '', '```hcl', output, '```', '', '</details>');
