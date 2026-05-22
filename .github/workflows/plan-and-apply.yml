@@ -299,7 +299,7 @@ jobs:
                   if (vals.length === 1) {
                     lines.push(`<tr><td><code>${name}</code></td><td><code>${esc(value)}</code></td></tr>`);
                   } else {
-                    lines.push(`<tr><td><code>${name}</code></td><td><details><summary>Show value</summary><pre>${esc(`${name} = ${value}`)}</pre></details></td></tr>`);
+                    lines.push(`<tr><td><code>${name}</code></td><td><details><summary><i>Show value</i></summary><pre>${esc(`${name} = ${value}`)}</pre></details></td></tr>`);
                   }
                 }
                 lines.push('</table>', '');

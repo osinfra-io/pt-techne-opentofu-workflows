@@ -14,16 +14,17 @@ output "random_string" {
 output "sensitive_value" {
   description = "A sensitive output to verify HTML escaping of <sensitive>"
   sensitive   = true
-  value       = random_string.test.result
+  value       = plantimestamp()
 }
 
 output "simple_map" {
   description = "A multi-line map output to verify details rendering"
   value = {
-    environment = module.core_helpers.environment
-    env         = module.core_helpers.env
-    project_id  = var.project
-    region      = "us-east1"
+    environment  = module.core_helpers.environment
+    env          = module.core_helpers.env
+    project_id   = var.project
+    region       = "us-east1"
+    last_applied = plantimestamp()
   }
 }
 
@@ -41,5 +42,6 @@ output "nested_object" {
         }
       }
     }
+    last_applied = plantimestamp()
   }
 }
