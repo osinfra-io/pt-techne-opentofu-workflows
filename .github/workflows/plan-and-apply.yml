@@ -167,12 +167,15 @@ jobs:
             const output = fs.existsSync(outputFile) ? fs.readFileSync(outputFile, 'utf8') : '';
             if (!output.trim()) { return; }
             const planMatch = output.match(/Plan: (\d+) to add, (\d+) to change, (\d+) to destroy/);
+            const outputsOnlyMatch = output.includes('Changes to Outputs:');
             const errorMatch = output.match(/Error:.+/);
             const logo = '<picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-dark.png"><img src="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-light.png" height="24"></picture>';
             const lines = [logo, ''];
             if (planMatch) {
               lines.push('| ➕ Add | 🔄 Change | 🗑️ Destroy |', '|---|---|---|');
               lines.push(`| ${planMatch[1]} | ${planMatch[2]} | ${planMatch[3]} |`, '');
+            } else if (outputsOnlyMatch) {
+              lines.push('**📤 Output-only changes.** No infrastructure changes, but output values will be updated.', '');
             } else if (!errorMatch) {
               lines.push('**✅ No changes.** Your infrastructure matches the configuration.', '');
             }
@@ -275,19 +278,33 @@ jobs:
             }
             const outputsStart = output.indexOf('\nOutputs:\n');
             if (outputsStart !== -1) {
+              const outputLines = output.slice(outputsStart + '\nOutputs:\n'.length).trim().split('\n');
               const outputEntries = [];
-              for (const line of output.slice(outputsStart + '\nOutputs:\n'.length).trim().split('\n')) {
-                const m = line.match(/^(\S+)\s*=\s*(.+)$/);
-                if (m) outputEntries.push({ name: m[1], value: m[2].trim() });
-              }
-              if (outputEntries.length) {
-                lines.push('**Outputs**', '', '| Name | Value |', '|---|---|');
-                for (const { name, value } of outputEntries) {
-                  lines.push(`| \`${name}\` | \`${value}\` |`);
+              let current = null;
+              for (const line of outputLines) {
+                const m = line.match(/^([A-Za-z_][A-Za-z0-9_-]*)\s+=\s+(.*)$/);
+                if (m) {
+                  if (current) outputEntries.push(current);
+                  current = { name: m[1], lines: [m[2]] };
+                } else if (current) {
+                  current.lines.push(line);
                 }
-                lines.push('');
+              }
+              if (current) outputEntries.push(current);
+              if (outputEntries.length) {
+                const simple = outputEntries.filter(e => e.lines.length === 1);
+                const complex = outputEntries.filter(e => e.lines.length > 1);
+                if (simple.length) {
+                  lines.push('**Outputs**', '', '| Name | Value |', '|---|---|');
+                  for (const { name, lines: vals } of simple) {
+                    lines.push(`| \`${name}\` | \`${vals[0]}\` |`);
+                  }
+                  lines.push('');
+                }
+                for (const { name, lines: vals } of complex) {
+                  lines.push(`<details>`, `<summary><b>Output:</b> <code>${name}</code></summary>`, '', '```hcl', `${name} = ${vals.join('\n')}`, '```', '', '</details>', '');
+                }
               }
             }
             lines.push('<details>', '<summary>Full Apply Output</summary>', '', '```hcl', output, '```', '', '</details>');
             await core.summary.addRaw(lines.join('\n')).write();
-
