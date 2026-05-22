@@ -167,12 +167,15 @@ jobs:
             const output = fs.existsSync(outputFile) ? fs.readFileSync(outputFile, 'utf8') : '';
             if (!output.trim()) { return; }
             const planMatch = output.match(/Plan: (\d+) to add, (\d+) to change, (\d+) to destroy/);
+            const outputsOnlyMatch = output.includes('Changes to Outputs:');
             const errorMatch = output.match(/Error:.+/);
             const logo = '<picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-dark.png"><img src="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-light.png" height="24"></picture>';
             const lines = [logo, ''];
             if (planMatch) {
               lines.push('| ➕ Add | 🔄 Change | 🗑️ Destroy |', '|---|---|---|');
               lines.push(`| ${planMatch[1]} | ${planMatch[2]} | ${planMatch[3]} |`, '');
+            } else if (outputsOnlyMatch) {
+              lines.push('**📤 Output-only changes.** No infrastructure changes, but output values will be updated.', '');
             } else if (!errorMatch) {
               lines.push('**✅ No changes.** Your infrastructure matches the configuration.', '');
             }
