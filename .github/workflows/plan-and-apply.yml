@@ -282,7 +282,7 @@ jobs:
               const outputEntries = [];
               let current = null;
               for (const line of outputLines) {
-                const m = line.match(/^(\S+)\s*=\s*(.*)$/);
+                const m = line.match(/^([A-Za-z_][A-Za-z0-9_-]*)\s+=\s+(.*)$/);
                 if (m) {
                   if (current) outputEntries.push(current);
                   current = { name: m[1], lines: [m[2]] };
