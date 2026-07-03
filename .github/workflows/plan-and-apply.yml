@@ -144,8 +144,7 @@ jobs:
         uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
         with:
           tofu_version: ${{ inputs.opentofu_version }}
-
-      - name: OpenTofu format
+          tofu_wrapper: false
         run: tofu fmt -check -diff
 
       - name: Inject OpenTofu variables
@@ -189,7 +188,9 @@ jobs:
 
       - name: OpenTofu show
         id: show
-        run: tofu show -no-color plan.out | tee "$RUNNER_TEMP/tofu-show.txt"
+        run: |
+          set -o pipefail
+          tofu show -no-color plan.out | tee "$RUNNER_TEMP/tofu-show.txt"
 
       - name: OpenTofu summary
         if: always()
@@ -283,10 +284,13 @@ jobs:
         uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
         with:
           tofu_version: ${{ inputs.opentofu_version }}
+          tofu_wrapper: false
 
       - name: OpenTofu apply
         id: apply
-        run: tofu apply -no-color plan.out 2>&1 | tee "$RUNNER_TEMP/tofu-apply.txt"
+        run: |
+          set -o pipefail
+          tofu apply -no-color plan.out 2>&1 | tee "$RUNNER_TEMP/tofu-apply.txt"
 
       - name: OpenTofu summary
         if: always()
