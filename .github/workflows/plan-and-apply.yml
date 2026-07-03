@@ -184,17 +184,19 @@ jobs:
         env:
           OPENTOFU_PLAN_ARGS: ${{ inputs.opentofu_plan_args }}
           OPENTOFU_PLAN_SECRET_ARGS: ${{ secrets.opentofu_plan_secret_args }}
+        shell: bash
         run: |
           set +e
           tofu plan -detailed-exitcode -input=false -out=plan.out $OPENTOFU_PLAN_ARGS $OPENTOFU_PLAN_SECRET_ARGS
-          exit_code=$?
-          [[ $exit_code -eq 0 || $exit_code -eq 2 ]]
+          exitcode=$?
+          echo "exitcode=${exitcode}" >> $GITHUB_OUTPUT
+          if [ $exitcode -eq 1 ]; then
+            exit 1
+          fi
 
       - name: OpenTofu show
         id: show
-        run: |
-          set -o pipefail
-          tofu show -no-color plan.out | tee "$RUNNER_TEMP/tofu-show.txt"
+        run: tofu show -no-color plan.out | tee "$RUNNER_TEMP/tofu-show.txt"
 
       - name: OpenTofu summary
         if: always()
@@ -230,7 +232,7 @@ jobs:
   apply:
     name: OpenTofu apply
     needs: plan
-    if: needs.plan.outputs.plan-exit-code == 2
+    if: needs.plan.outputs.plan-exit-code == '2'
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.github_environment }}
@@ -292,6 +294,7 @@ jobs:
 
       - name: OpenTofu apply
         id: apply
+        shell: bash
         run: |
           set -o pipefail
           tofu apply -no-color plan.out 2>&1 | tee "$RUNNER_TEMP/tofu-apply.txt"
