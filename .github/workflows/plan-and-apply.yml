@@ -184,9 +184,11 @@ jobs:
         env:
           OPENTOFU_PLAN_ARGS: ${{ inputs.opentofu_plan_args }}
           OPENTOFU_PLAN_SECRET_ARGS: ${{ secrets.opentofu_plan_secret_args }}
-        run: >-
-          tofu plan -detailed-exitcode -input=false -out=plan.out
-          $OPENTOFU_PLAN_ARGS $OPENTOFU_PLAN_SECRET_ARGS
+        run: |
+          set +e
+          tofu plan -detailed-exitcode -input=false -out=plan.out $OPENTOFU_PLAN_ARGS $OPENTOFU_PLAN_SECRET_ARGS
+          exit_code=$?
+          [[ $exit_code -eq 0 || $exit_code -eq 2 ]]
 
       - name: OpenTofu show
         id: show
