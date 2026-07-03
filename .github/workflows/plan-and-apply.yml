@@ -189,7 +189,9 @@ jobs:
 
       - name: OpenTofu show
         id: show
-        run: tofu show -no-color plan.out | tee "$RUNNER_TEMP/tofu-show.txt"
+        run: |
+          set -o pipefail
+          tofu show -no-color plan.out | tee "$RUNNER_TEMP/tofu-show.txt"
 
       - name: OpenTofu summary
         if: always()
@@ -286,7 +288,9 @@ jobs:
 
       - name: OpenTofu apply
         id: apply
-        run: tofu apply -no-color plan.out 2>&1 | tee "$RUNNER_TEMP/tofu-apply.txt"
+        run: |
+          set -o pipefail
+          tofu apply -no-color plan.out 2>&1 | tee "$RUNNER_TEMP/tofu-apply.txt"
 
       - name: OpenTofu summary
         if: always()
