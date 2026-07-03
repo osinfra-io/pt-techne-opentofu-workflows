@@ -145,6 +145,8 @@ jobs:
         with:
           tofu_version: ${{ inputs.opentofu_version }}
           tofu_wrapper: false
+
+      - name: OpenTofu format
         run: tofu fmt -check -diff
 
       - name: Inject OpenTofu variables
