@@ -161,14 +161,18 @@ jobs:
         run: tofu init
 
       - name: OpenTofu workspace
+        env:
+          OPENTOFU_WORKSPACE: ${{ inputs.opentofu_workspace }}
         run: >-
-          tofu workspace select -or-create ${{ inputs.opentofu_workspace }}
+          tofu workspace select -or-create "$OPENTOFU_WORKSPACE"
 
       - name: OpenTofu passthrough output
         id: passthrough
         if: inputs.passthrough_output != ''
+        env:
+          PASSTHROUGH_OUTPUT: ${{ inputs.passthrough_output }}
         run: >-
-          echo "value=$(tofu output -json ${{ inputs.passthrough_output }}
+          echo "value=$(tofu output -json "$PASSTHROUGH_OUTPUT"
           2>/dev/null | jq -c . || echo '')" >> "$GITHUB_OUTPUT"
 
       - name: OpenTofu validate
@@ -279,15 +283,6 @@ jobs:
         uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
         with:
           tofu_version: ${{ inputs.opentofu_version }}
-
-      - name: Inject OpenTofu variables
-        if: inputs.opentofu_var_json != ''
-        env:
-          OPENTOFU_VAR_JSON: ${{ inputs.opentofu_var_json }}
-        run: >-
-          echo "$OPENTOFU_VAR_JSON"
-          | jq -r 'to_entries[] | "TF_VAR_\(.key)=\(.value | tojson)"'
-          >> "$GITHUB_ENV"
 
       - name: OpenTofu apply
         id: apply
