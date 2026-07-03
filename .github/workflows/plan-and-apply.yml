@@ -24,6 +24,11 @@ on:
         description: "The GCS bucket used for OpenTofu state storage"
         required: true
         type: string
+      opentofu_var_json:
+        description: "JSON object of extra OpenTofu variables to inject; each top-level key becomes TF_VAR_<key> (value JSON-encoded)"
+        required: false
+        type: string
+        default: ""
       opentofu_version:
         description: "The version of OpenTofu to use"
         required: true
@@ -32,6 +37,11 @@ on:
         description: "The OpenTofu workspace to select"
         required: true
         type: string
+      passthrough_output:
+        description: "Name of a tofu output to expose as this workflow's `passthrough` output (JSON-encoded)"
+        required: false
+        type: string
+        default: ""
       service_account:
         description: "The GCP service account to impersonate for the deployment"
         required: true
@@ -55,6 +65,11 @@ on:
       opentofu_plan_secret_args:
         description: "Additional secret arguments to pass to the tofu plan command"
         required: false
+
+    outputs:
+      passthrough:
+        description: "JSON-encoded value of the tofu output named by passthrough_output (empty if unset or absent from state)"
+        value: ${{ jobs.plan.outputs.passthrough }}
 
 permissions:
   contents: read
@@ -133,12 +148,28 @@ jobs:
       - name: OpenTofu format
         run: tofu fmt -check -diff
 
+      - name: Inject OpenTofu variables
+        if: inputs.opentofu_var_json != ''
+        env:
+          OPENTOFU_VAR_JSON: ${{ inputs.opentofu_var_json }}
+        run: >-
+          echo "$OPENTOFU_VAR_JSON"
+          | jq -r 'to_entries[] | "TF_VAR_\(.key)=\(.value | tojson)"'
+          >> "$GITHUB_ENV"
+
       - name: OpenTofu initialize
         run: tofu init
 
       - name: OpenTofu workspace
         run: >-
           tofu workspace select -or-create ${{ inputs.opentofu_workspace }}
+
+      - name: OpenTofu passthrough output
+        id: passthrough
+        if: inputs.passthrough_output != ''
+        run: >-
+          echo "value=$(tofu output -json ${{ inputs.passthrough_output }}
+          2>/dev/null | jq -c . || echo '')" >> "$GITHUB_OUTPUT"
 
       - name: OpenTofu validate
         run: tofu validate
@@ -185,6 +216,7 @@ jobs:
 
     outputs:
       plan-exit-code: ${{ steps.plan.outputs.exitcode }}
+      passthrough: ${{ steps.passthrough.outputs.value }}
 
   apply:
     name: OpenTofu apply
@@ -247,6 +279,15 @@ jobs:
         uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
         with:
           tofu_version: ${{ inputs.opentofu_version }}
+
+      - name: Inject OpenTofu variables
+        if: inputs.opentofu_var_json != ''
+        env:
+          OPENTOFU_VAR_JSON: ${{ inputs.opentofu_var_json }}
+        run: >-
+          echo "$OPENTOFU_VAR_JSON"
+          | jq -r 'to_entries[] | "TF_VAR_\(.key)=\(.value | tojson)"'
+          >> "$GITHUB_ENV"
 
       - name: OpenTofu apply
         id: apply
