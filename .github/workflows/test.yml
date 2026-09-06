@@ -97,36 +97,64 @@ jobs:
       - name: OpenTofu summary
         if: always()
         continue-on-error: true
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        with:
-          script: |
-            const fs = require('fs');
-            const outputFile = `${process.env.RUNNER_TEMP}/tofu-test.txt`;
-            const output = fs.existsSync(outputFile) ? fs.readFileSync(outputFile, 'utf8') : '';
-            if (!output.trim()) { return; }
-            const escape = (s) => String(s).replace(/[`|\\]/g, '\\$&');
-            const errorMatch = output.match(/Error:.+/);
-            const runs = [];
-            let currentFile = '';
-            for (const line of output.split('\n')) {
-              const fileMatch = line.match(/^(\S+\.tftest\.hcl)\.\.\./);
-              const runMatch  = line.match(/^\s+run "(.+)"\.\.\. (pass|fail)/);
-              if (fileMatch) currentFile = fileMatch[1];
-              if (runMatch && currentFile) runs.push({ file: currentFile, run: runMatch[1], result: runMatch[2] });
-            }
-            const logo = '<picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-dark.png"><img src="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-light.png" height="24"></picture>';
-            const lines = [logo, ''];
-            if (runs.length) {
-              lines.push('| Result | File | Run |', '|---|---|---|');
-              for (const r of runs) {
-                const icon = r.result === 'pass' ? '✅' : '❌';
-                lines.push(`| ${icon} | \`${escape(r.file)}\` | \`${escape(r.run)}\` |`);
-              }
-              lines.push('');
-            }
-            if (errorMatch) { lines.push(`> ❌ ${errorMatch[0]}`, ''); }
-            lines.push('<details>', '<summary>Full Test Output</summary>', '', '```hcl', output, '```', '', '</details>');
-            await core.summary.addRaw(lines.join('\n')).write();
+        shell: bash
+        run: |
+          output_file="$RUNNER_TEMP/tofu-test.txt"
+          if [ ! -f "$output_file" ] || ! grep -q '[^[:space:]]' "$output_file"; then
+            exit 0
+          fi
+
+          escape_markdown() {
+            printf '%s' "$1" | sed 's/[`|\\]/\\&/g'
+          }
+
+          error_line="$(grep -m1 -E 'Error:.+' "$output_file" || true)"
+          current_file=''
+          runs=()
+
+          while IFS= read -r line; do
+            if [[ "$line" =~ ^([^[:space:]]+\.tftest\.hcl)\.\.\. ]]; then
+              current_file="${BASH_REMATCH[1]}"
+            fi
+            if [[ "$line" =~ ^[[:space:]]+run\ \"(.+)\"\.\.\.\ (pass|fail) ]] && [ -n "$current_file" ]; then
+              runs+=("${BASH_REMATCH[2]}|${current_file}|${BASH_REMATCH[1]}")
+            fi
+          done < "$output_file"
+
+          {
+            echo '<picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-dark.png"><img src="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-light.png" height="24"></picture>'
+            echo
+
+            if [ ${#runs[@]} -gt 0 ]; then
+              echo '| Result | File | Run |'
+              echo '|---|---|---|'
+              for entry in "${runs[@]}"; do
+                IFS='|' read -r result file run_name <<< "$entry"
+                icon='❌'
+                if [ "$result" = 'pass' ]; then
+                  icon='✅'
+                fi
+                escaped_file="$(escape_markdown "$file")"
+                escaped_run="$(escape_markdown "$run_name")"
+                echo "| ${icon} | \`${escaped_file}\` | \`${escaped_run}\` |"
+              done
+              echo
+            fi
+
+            if [ -n "$error_line" ]; then
+              echo "> ❌ $error_line"
+              echo
+            fi
+
+            echo '<details>'
+            echo '<summary>Full Test Output</summary>'
+            echo
+            echo '```hcl'
+            cat "$output_file"
+            echo '```'
+            echo
+            echo '</details>'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: OpenTofu test result
         if: steps.test.outcome == 'failure'

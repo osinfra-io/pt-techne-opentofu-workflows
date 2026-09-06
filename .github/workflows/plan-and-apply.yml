@@ -201,29 +201,49 @@ jobs:
       - name: OpenTofu summary
         if: always()
         continue-on-error: true
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        with:
-          script: |
-            const fs = require('fs');
-            const outputFile = `${process.env.RUNNER_TEMP}/tofu-show.txt`;
-            const output = fs.existsSync(outputFile) ? fs.readFileSync(outputFile, 'utf8') : '';
-            if (!output.trim()) { return; }
-            const planMatch = output.match(/Plan: (\d+) to add, (\d+) to change, (\d+) to destroy/);
-            const outputsOnlyMatch = output.includes('Changes to Outputs:');
-            const errorMatch = output.match(/Error:.+/);
-            const logo = '<picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-dark.png"><img src="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-light.png" height="24"></picture>';
-            const lines = [logo, ''];
-            if (planMatch) {
-              lines.push('| ➕ Add | 🔄 Change | 🗑️ Destroy |', '|---|---|---|');
-              lines.push(`| ${planMatch[1]} | ${planMatch[2]} | ${planMatch[3]} |`, '');
-            } else if (outputsOnlyMatch) {
-              lines.push('**📤 Output-only changes.** No infrastructure changes, but output values will be updated.', '');
-            } else if (!errorMatch) {
-              lines.push('**✅ No changes.** Your infrastructure matches the configuration.', '');
-            }
-            if (errorMatch) { lines.push(`> ❌ ${errorMatch[0]}`, ''); }
-            lines.push('<details>', '<summary>Full Plan Output</summary>', '', '```hcl', output, '```', '', '</details>');
-            await core.summary.addRaw(lines.join('\n')).write();
+        shell: bash
+        run: |
+          output_file="$RUNNER_TEMP/tofu-show.txt"
+          if [ ! -f "$output_file" ] || ! grep -q '[^[:space:]]' "$output_file"; then
+            exit 0
+          fi
+
+          error_line="$(grep -m1 -E 'Error:.+' "$output_file" || true)"
+
+          {
+            echo '<picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-dark.png"><img src="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-light.png" height="24"></picture>'
+            echo
+
+            if grep -q -E 'Plan: [0-9]+ to add, [0-9]+ to change, [0-9]+ to destroy' "$output_file"; then
+              plan_line="$(grep -m1 -E 'Plan: [0-9]+ to add, [0-9]+ to change, [0-9]+ to destroy' "$output_file")"
+              if [[ "$plan_line" =~ Plan:\ ([0-9]+)\ to\ add,\ ([0-9]+)\ to\ change,\ ([0-9]+)\ to\ destroy ]]; then
+                echo '| ➕ Add | 🔄 Change | 🗑️ Destroy |'
+                echo '|---|---|---|'
+                echo "| ${BASH_REMATCH[1]} | ${BASH_REMATCH[2]} | ${BASH_REMATCH[3]} |"
+                echo
+              fi
+            elif grep -q 'Changes to Outputs:' "$output_file"; then
+              echo '**📤 Output-only changes.** No infrastructure changes, but output values will be updated.'
+              echo
+            elif [ -z "$error_line" ]; then
+              echo '**✅ No changes.** Your infrastructure matches the configuration.'
+              echo
+            fi
+
+            if [ -n "$error_line" ]; then
+              echo "> ❌ $error_line"
+              echo
+            fi
+
+            echo '<details>'
+            echo '<summary>Full Plan Output</summary>'
+            echo
+            echo '```hcl'
+            cat "$output_file"
+            echo '```'
+            echo
+            echo '</details>'
+          } >> "$GITHUB_STEP_SUMMARY"
 
     outputs:
       plan-exit-code: ${{ steps.plan.outputs.exitcode }}
@@ -302,55 +322,95 @@ jobs:
       - name: OpenTofu summary
         if: always()
         continue-on-error: true
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        with:
-          script: |
-            const fs = require('fs');
-            const outputFile = `${process.env.RUNNER_TEMP}/tofu-apply.txt`;
-            const output = fs.existsSync(outputFile) ? fs.readFileSync(outputFile, 'utf8') : '';
-            if (!output.trim()) { return; }
-            const applyMatch = output.match(/Apply complete! Resources: (\d+) added, (\d+) changed, (\d+) destroyed/);
-            const errorMatch = output.match(/Error:.+/);
-            const logo = '<picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-dark.png"><img src="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-light.png" height="24"></picture>';
-            const lines = [logo, ''];
-            if (applyMatch) {
-              lines.push(`**✅ Apply complete!** ${applyMatch[1]} added, ${applyMatch[2]} changed, ${applyMatch[3]} destroyed.`, '');
-            } else if (errorMatch) {
-              const succeeded = (output.match(/Creation complete/g) || []).length
-                + (output.match(/Modifications complete/g) || []).length
-                + (output.match(/Destruction complete/g) || []).length;
-              const failed = (output.match(/Error:/g) || []).length;
-              lines.push(`**❌ Apply failed.** ${succeeded} succeeded, ${failed} errored.`, '');
-              lines.push(`> ${errorMatch[0]}`, '');
-            }
-            const outputsStart = output.indexOf('\nOutputs:\n');
-            if (outputsStart !== -1) {
-              const outputLines = output.slice(outputsStart + '\nOutputs:\n'.length).trim().split('\n');
-              const outputEntries = [];
-              let current = null;
-              for (const line of outputLines) {
-                const m = line.match(/^([A-Za-z_][A-Za-z0-9_-]*)\s+=\s+(.*)$/);
-                if (m) {
-                  if (current) outputEntries.push(current);
-                  current = { name: m[1], lines: [m[2]] };
-                } else if (current) {
-                  current.lines.push(line);
-                }
-              }
-              if (current) outputEntries.push(current);
-              if (outputEntries.length) {
-                lines.push('**Outputs**', '', '<table>', '<tr><th>Name</th><th>Value</th></tr>');
-                for (const { name, lines: vals } of outputEntries) {
-                  const value = vals.join('\n');
-                  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                  if (vals.length === 1) {
-                    lines.push(`<tr><td><code>${name}</code></td><td><code>${esc(value)}</code></td></tr>`);
-                  } else {
-                    lines.push(`<tr><td><code>${name}</code></td><td><details><summary><i>Show value</i></summary><pre>${esc(`${name} = ${value}`)}</pre></details></td></tr>`);
-                  }
-                }
-                lines.push('</table>', '');
-              }
-            }
-            lines.push('<details>', '<summary>Full Apply Output</summary>', '', '```hcl', output, '```', '', '</details>');
-            await core.summary.addRaw(lines.join('\n')).write();
+        shell: bash
+        run: |
+          output_file="$RUNNER_TEMP/tofu-apply.txt"
+          if [ ! -f "$output_file" ] || ! grep -q '[^[:space:]]' "$output_file"; then
+            exit 0
+          fi
+
+          error_line="$(grep -m1 -E 'Error:.+' "$output_file" || true)"
+          apply_line="$(grep -m1 -E 'Apply complete! Resources: [0-9]+ added, [0-9]+ changed, [0-9]+ destroyed' "$output_file" || true)"
+
+          html_escape() {
+            local value="$1"
+            value=${value//&/&amp;}
+            value=${value//</&lt;}
+            value=${value//>/&gt;}
+            printf '%s' "$value"
+          }
+
+          {
+            echo '<picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-dark.png"><img src="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-light.png" height="24"></picture>'
+            echo
+
+            if [[ "$apply_line" =~ Apply\ complete!\ Resources:\ ([0-9]+)\ added,\ ([0-9]+)\ changed,\ ([0-9]+)\ destroyed ]]; then
+              echo "**✅ Apply complete!** ${BASH_REMATCH[1]} added, ${BASH_REMATCH[2]} changed, ${BASH_REMATCH[3]} destroyed."
+              echo
+            elif [ -n "$error_line" ]; then
+              succeeded=$(( $(grep -c 'Creation complete' "$output_file" || true) + $(grep -c 'Modifications complete' "$output_file" || true) + $(grep -c 'Destruction complete' "$output_file" || true) ))
+              failed=$(grep -c 'Error:' "$output_file" || true)
+              echo "**❌ Apply failed.** ${succeeded} succeeded, ${failed} errored."
+              echo
+              echo "> $error_line"
+              echo
+            fi
+
+            if grep -q '^Outputs:$' "$output_file"; then
+              mapfile -t output_lines < <(awk 'found { print } /^Outputs:$/ { found = 1 }' "$output_file")
+              output_entries=()
+              current_name=''
+              current_values=()
+
+              for line in "${output_lines[@]}"; do
+                if [[ "$line" =~ ^([A-Za-z_][A-Za-z0-9_-]*)[[:space:]]+=[[:space:]]+(.*)$ ]]; then
+                  if [ -n "$current_name" ]; then
+                    output_entries+=("$current_name")
+                    output_entries+=("$(printf '%s\n' "${current_values[@]}")")
+                  fi
+                  current_name="${BASH_REMATCH[1]}"
+                  current_values=("${BASH_REMATCH[2]}")
+                elif [ -n "$current_name" ]; then
+                  current_values+=("$line")
+                fi
+              done
+
+              if [ -n "$current_name" ]; then
+                output_entries+=("$current_name")
+                output_entries+=("$(printf '%s\n' "${current_values[@]}")")
+              fi
+
+              if [ ${#output_entries[@]} -gt 0 ]; then
+                echo '**Outputs**'
+                echo
+                echo '<table>'
+                echo '<tr><th>Name</th><th>Value</th></tr>'
+
+                for ((i = 0; i < ${#output_entries[@]}; i += 2)); do
+                  name="${output_entries[i]}"
+                  value_block="${output_entries[i + 1]%$'\n'}"
+                  mapfile -t value_lines <<< "$value_block"
+
+                  if [ ${#value_lines[@]} -eq 1 ]; then
+                    escaped_value="$(html_escape "${value_lines[0]}")"
+                    echo "<tr><td><code>${name}</code></td><td><code>${escaped_value}</code></td></tr>"
+                  else
+                    escaped_value="$(html_escape "${name} = ${value_block}")"
+                    echo "<tr><td><code>${name}</code></td><td><details><summary><i>Show value</i></summary><pre>${escaped_value}</pre></details></td></tr>"
+                  fi
+                done
+
+                echo '</table>'
+                echo
+              fi
+            fi
+
+            echo '<details>'
+            echo '<summary>Full Apply Output</summary>'
+            echo
+            echo '```hcl'
+            cat "$output_file"
+            echo '```'
+            echo
+            echo '</details>'
+          } >> "$GITHUB_STEP_SUMMARY"
