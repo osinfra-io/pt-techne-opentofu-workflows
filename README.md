@@ -36,7 +36,7 @@ You can check the [.github/workflows](.github/workflows/) directory for example 
 
 These set up the system for the testing process by providing all the necessary initial code, thus creating good examples to base your configuration on.
 
-The plan-and-apply workflow accepts `google_oauth_client_id` and `google_oauth_client_secret` as called-workflow secrets. They are exposed as `TF_VAR_google_oauth_client_id` and `TF_VAR_google_oauth_client_secret` only on the `tofu plan` step, keeping them out of command-line arguments and the job-wide environment.
+Use `opentofu_var_json` for non-secret OpenTofu variables. For secret variables needed only to build the saved plan, pass a JSON object through the `opentofu_plan_secret_var_json` secret; each top-level key is exposed as `TF_VAR_<key>` only during the `tofu plan` step. Keep secret values out of `opentofu_plan_args` and `opentofu_plan_secret_args`, which are expanded as command-line arguments.
 
 Since we use early variable evaluation for backend and provider configuration, consumers must ensure that the following variables are set in each respective `variables.tofu` file:
 

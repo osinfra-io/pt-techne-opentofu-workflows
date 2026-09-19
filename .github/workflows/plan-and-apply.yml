@@ -62,14 +62,11 @@ on:
       # ssh_key:
       #   required: true
 
-      google_oauth_client_id:
-        description: "Google OAuth client ID exposed as TF_VAR_google_oauth_client_id only during tofu plan"
-        required: false
-      google_oauth_client_secret:
-        description: "Google OAuth client secret exposed as TF_VAR_google_oauth_client_secret only during tofu plan"
-        required: false
       opentofu_plan_secret_args:
         description: "Additional secret arguments to pass to the tofu plan command"
+        required: false
+      opentofu_plan_secret_var_json:
+        description: "JSON object of secret OpenTofu variables to expose as TF_VAR_<key> only during tofu plan"
         required: false
 
     outputs:
@@ -190,10 +187,27 @@ jobs:
         env:
           OPENTOFU_PLAN_ARGS: ${{ inputs.opentofu_plan_args }}
           OPENTOFU_PLAN_SECRET_ARGS: ${{ secrets.opentofu_plan_secret_args }}
-          TF_VAR_google_oauth_client_id: ${{ secrets.google_oauth_client_id }}
-          TF_VAR_google_oauth_client_secret: ${{ secrets.google_oauth_client_secret }}
+          OPENTOFU_PLAN_SECRET_VAR_JSON: ${{ secrets.opentofu_plan_secret_var_json }}
         shell: bash
         run: |
+          if [[ -n "$OPENTOFU_PLAN_SECRET_VAR_JSON" ]]; then
+            if ! jq -e 'type == "object"' >/dev/null <<< "$OPENTOFU_PLAN_SECRET_VAR_JSON"; then
+              echo "::error::opentofu_plan_secret_var_json must be a JSON object"
+              exit 1
+            fi
+
+            while IFS=$'\t' read -r key value; do
+              if [[ ! "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+                echo "::error::Invalid OpenTofu secret variable name: $key"
+                exit 1
+              fi
+              export "TF_VAR_${key}=${value}"
+            done < <(
+              jq -r 'to_entries[] | [.key, (.value | tojson)] | @tsv' \
+                <<< "$OPENTOFU_PLAN_SECRET_VAR_JSON"
+            )
+          fi
+
           set +e
           tofu plan -detailed-exitcode -input=false -out=plan.out $OPENTOFU_PLAN_ARGS $OPENTOFU_PLAN_SECRET_ARGS
           exitcode=$?
