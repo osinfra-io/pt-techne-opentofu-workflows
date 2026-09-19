@@ -62,6 +62,12 @@ on:
       # ssh_key:
       #   required: true
 
+      google_oauth_client_id:
+        description: "Google OAuth client ID exposed as TF_VAR_google_oauth_client_id only during tofu plan"
+        required: false
+      google_oauth_client_secret:
+        description: "Google OAuth client secret exposed as TF_VAR_google_oauth_client_secret only during tofu plan"
+        required: false
       opentofu_plan_secret_args:
         description: "Additional secret arguments to pass to the tofu plan command"
         required: false
@@ -184,6 +190,8 @@ jobs:
         env:
           OPENTOFU_PLAN_ARGS: ${{ inputs.opentofu_plan_args }}
           OPENTOFU_PLAN_SECRET_ARGS: ${{ secrets.opentofu_plan_secret_args }}
+          TF_VAR_google_oauth_client_id: ${{ secrets.google_oauth_client_id }}
+          TF_VAR_google_oauth_client_secret: ${{ secrets.google_oauth_client_secret }}
         shell: bash
         run: |
           set +e
