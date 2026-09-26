@@ -6,9 +6,9 @@ Reusable GitHub Actions workflows for OpenTofu validation and environment deploy
 
 ## Caller contract
 
-- `plan-and-apply.yml` authenticates to Google Cloud with OIDC, initializes encrypted state, selects the workspace, plans, and applies behind GitHub environment approval.
+- `plan-and-apply.yml` authenticates to Google Cloud with OIDC, initializes encrypted state, selects the workspace, plans, and applies. GitHub pauses the job for approval only when the selected environment has a required-reviewer protection rule.
 - `test.yml` runs module validation and tests without deploying infrastructure.
-- Callers must grant the permissions required for OIDC and repository contents and provide the documented workflow inputs and inherited secrets.
+- Callers must grant the permissions required by each workflow: `plan-and-apply.yml` requires `id-token: write` and repository contents access, while `test.yml` requires `contents: read`. Provide inherited secrets only when using the corresponding optional secret inputs.
 
 ### Features
 
