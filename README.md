@@ -2,15 +2,13 @@
 
 [![Dependabot](https://img.shields.io/github/actions/workflow/status/osinfra-io/pt-techne-opentofu-workflows/local-dependabot.yml?style=for-the-badge&logo=github&color=2088FF&label=Dependabot)](https://github.com/osinfra-io/pt-techne-opentofu-workflows/actions/workflows/local-dependabot.yml)
 
-Reusing workflows avoids duplication. This makes workflows easier to maintain and allows you to create new workflows
-more quickly by building on the work of others, just as you do with actions.
+Reusable GitHub Actions workflows for OpenTofu validation and environment deployments on Google Cloud. Consumers pin this repository to a full commit SHA and supply their environment, workspace, state encryption, service account, and Workload Identity Federation settings.
 
-Workflow reuse also promotes best practices by helping you use well-designed, tested, and proven effective workflows. Your organization can build up a library of reusable workflows that can
-be centrally maintained.
+## Caller contract
 
-## Reusing Workflows
-
-Rather than copying and pasting from one workflow to another, you can make workflows [reusable](https://docs.github.com/en/actions/learn-github-actions/reusing-workflows). You and anyone with access to the reusable workflow can then call the reusable workflow from another workflow.
+- `plan-and-apply.yml` authenticates to Google Cloud with OIDC, initializes encrypted state, selects the workspace, plans, and applies behind GitHub environment approval.
+- `test.yml` runs module validation and tests without deploying infrastructure.
+- Callers must grant the permissions required for OIDC and repository contents and provide the documented workflow inputs and inherited secrets.
 
 ### Features
 
