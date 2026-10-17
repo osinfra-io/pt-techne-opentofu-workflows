@@ -34,24 +34,14 @@ You can check the [.github/workflows](.github/workflows/) directory for example 
 
 These set up the system for the testing process by providing all the necessary initial code, thus creating good examples to base your configuration on.
 
-Since we use early variable evaluation for backend and provider configuration, consumers must ensure that the following variables are set in each respective `variables.tofu` file:
+State encryption and the backend are configured by the called workflow, so consumers don't declare any `state_*` variables:
+
+- `TF_ENCRYPTION` supplies the default `gcp_kms` key provider, the `aes_gcm` method, and enforced plan and state encryption. It is merged with any `encryption {}` block in the root module, which can reference `method.aes_gcm.default` (for example in `remote_state_data_sources`).
+- `GOOGLE_KMS_ENCRYPTION_KEY` supplies the GCS backend's KMS key.
+- `tofu init` receives the bucket and prefix through `-backend-config`, so the root module only declares an empty backend:
 
 ```hcl
-# These three state_* variables are required for early variable evaluation for backend and provider configuration.
-# They are defined in the GitHub Actions called workflows and should NOT be set in the OpenTofu configuration.
-
-variable "state_bucket" {
-  description = "The name of the GCS bucket to store state files"
-  type        = string
-}
-
-variable "state_kms_encryption_key" {
-  description = "The KMS encryption key for state and plan files"
-  type        = string
-}
-
-variable "state_prefix" {
-  description = "The prefix for state files in the GCS bucket"
-  type        = string
+terraform {
+  backend "gcs" {}
 }
 ```
