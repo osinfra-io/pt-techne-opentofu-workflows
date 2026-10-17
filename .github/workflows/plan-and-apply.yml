@@ -76,11 +76,31 @@ permissions:
   id-token: write
 
 env:
-  # Early variable evaluation required for backend and provider configuration
+  # State and plan encryption is configured here so root modules don't need to declare state variables.
+  # Repository-specific encryption settings (e.g. remote_state_data_sources) stay in the root module and are merged.
+  # https://opentofu.org/docs/language/state/encryption/#configuration
 
-  TF_VAR_state_bucket: ${{ inputs.opentofu_state_bucket }}
-  TF_VAR_state_kms_encryption_key: ${{ inputs.opentofu_kms_encryption_key }}
-  TF_VAR_state_prefix: ${{ github.event.repository.name }}
+  GOOGLE_KMS_ENCRYPTION_KEY: ${{ inputs.opentofu_kms_encryption_key }}
+
+  TF_ENCRYPTION: |
+    key_provider "gcp_kms" "default" {
+      key_length         = 32
+      kms_encryption_key = "${{ inputs.opentofu_kms_encryption_key }}"
+    }
+
+    method "aes_gcm" "default" {
+      keys = key_provider.gcp_kms.default
+    }
+
+    plan {
+      enforced = true
+      method   = method.aes_gcm.default
+    }
+
+    state {
+      enforced = true
+      method   = method.aes_gcm.default
+    }
 
   # If you use private modules you'll need this env variable to use
   # the same ssh-agent socket value across all jobs & steps.
@@ -159,7 +179,13 @@ jobs:
           >> "$GITHUB_ENV"
 
       - name: OpenTofu initialize
-        run: tofu init
+        env:
+          OPENTOFU_STATE_BUCKET: ${{ inputs.opentofu_state_bucket }}
+          OPENTOFU_STATE_PREFIX: ${{ github.event.repository.name }}
+        run: >-
+          tofu init
+          -backend-config="bucket=$OPENTOFU_STATE_BUCKET"
+          -backend-config="prefix=$OPENTOFU_STATE_PREFIX"
 
       - name: OpenTofu workspace
         env:
