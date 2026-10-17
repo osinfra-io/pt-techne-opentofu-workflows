@@ -95,31 +95,6 @@ jobs:
           set -o pipefail
           tofu validate -no-color $OPENTOFU_LINT 2>&1 | tee "$RUNNER_TEMP/tofu-validate.txt"
 
-      - name: OpenTofu lint summary
-        if: always() && inputs.opentofu_lint
-        continue-on-error: true
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        with:
-          script: |
-            const fs = require('fs');
-            const outputFile = `${process.env.RUNNER_TEMP}/tofu-validate.txt`;
-            const output = fs.existsSync(outputFile) ? fs.readFileSync(outputFile, 'utf8') : '';
-            const escape = (s) => String(s).replace(/[`|\\]/g, '\\$&');
-            const warnings = output.split(/^Warning: /m).slice(1)
-              .map((block) => block.replace(/\nSuccess!.*$/s, '').trim())
-              .filter((block) => !block.startsWith('Experimental linting enabled'));
-            if (!warnings.length) { return; }
-            const logo = '<picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-dark.png"><img src="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-light.png" height="24"></picture>';
-            const lines = [logo, '', '| Rule | Location | Message |', '|---|---|---|'];
-            for (const block of warnings) {
-              const rule = block.match(/\((\S+:\S+)\)\s*$/m);
-              const location = block.match(/^\s*on (\S+) line (\d+)/m);
-              const message = block.split(/\n\s*\n/).pop().trim().replace(/\s+/g, ' ');
-              lines.push(`| ⚠️ \`${escape(rule ? rule[1] : 'unknown')}\` | ${location ? `\`${escape(location[1])}:${location[2]}\`` : ''} | ${escape(message)} |`);
-            }
-            lines.push('', '<details>', '<summary>Full Lint Output</summary>', '', '```hcl', warnings.map((w) => `Warning: ${w}`).join('\n\n'), '```', '', '</details>');
-            await core.summary.addRaw(lines.join('\n')).write();
-
       - name: OpenTofu test
         id: test
         continue-on-error: true
@@ -149,6 +124,22 @@ jobs:
               if (fileMatch) currentFile = fileMatch[1];
               if (runMatch && currentFile) runs.push({ file: currentFile, run: runMatch[1], result: runMatch[2] });
             }
+            const lintFile = `${process.env.RUNNER_TEMP}/tofu-validate.txt`;
+            const lintOutput = fs.existsSync(lintFile) ? fs.readFileSync(lintFile, 'utf8') : '';
+            const lintWarnings = lintOutput.split(/^Warning: /m).slice(1)
+              .map((block) => block.replace(/\nSuccess!.*$/s, '').trim())
+              .filter((block) => !block.startsWith('Experimental linting enabled'));
+            const lintLines = [];
+            if (lintWarnings.length) {
+              lintLines.push('**🔍 Lint warnings**', '', '| Rule | Location | Message |', '|---|---|---|');
+              for (const block of lintWarnings) {
+                const rule = block.match(/\((\S+:\S+)\)\s*$/m);
+                const location = block.match(/^\s*on (\S+) line (\d+)/m);
+                const message = block.split(/\n\s*\n/).pop().trim().replace(/\s+/g, ' ');
+                lintLines.push(`| ⚠️ \`${escape(rule ? rule[1] : 'unknown')}\` | ${location ? `\`${escape(location[1])}:${location[2]}\`` : ''} | ${escape(message)} |`);
+              }
+              lintLines.push('', '<details>', '<summary>Full Lint Output</summary>', '', '```hcl', lintWarnings.map((w) => `Warning: ${w}`).join('\n\n'), '```', '', '</details>', '');
+            }
             const logo = '<picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-dark.png"><img src="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-light.png" height="24"></picture>';
             const lines = [logo, ''];
             if (runs.length) {
@@ -160,6 +151,7 @@ jobs:
               lines.push('');
             }
             if (errorMatch) { lines.push(`> ❌ ${errorMatch[0]}`, ''); }
+            lines.push(...lintLines);
             lines.push('<details>', '<summary>Full Test Output</summary>', '', '```hcl', output, '```', '', '</details>');
             await core.summary.addRaw(lines.join('\n')).write();
 
