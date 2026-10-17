@@ -209,7 +209,7 @@ jobs:
 
       - name: OpenTofu validate
         env:
-          OPENTOFU_LINT: ${{ inputs.opentofu_lint && '-lint' || '' }}
+          OPENTOFU_LINT: ${{ inputs.opentofu_lint && '-lint=all' || '' }}
         shell: bash
         run: |
           set -o pipefail
