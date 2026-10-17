@@ -259,7 +259,7 @@ jobs:
                 const message = block.split(/\n\s*\n/).pop().trim().replace(/\s+/g, ' ');
                 lintLines.push(`| ⚠️ | \`${escape(rule ? rule[1] : 'unknown')}\` | ${location ? `\`${escape(location[1])}:${location[2]}\`` : ''} | ${escape(message)} |`);
               }
-              lintLines.push('', '<details>', '<summary>Full Lint Output</summary>', '', '```hcl', lintWarnings.map((w) => `Warning: ${w}`).join('\n\n'), '```', '', '</details>', '');
+              lintLines.push('');
             }
             const planMatch = output.match(/Plan: (\d+) to add, (\d+) to change, (\d+) to destroy/);
             const outputsOnlyMatch = output.includes('Changes to Outputs:');
