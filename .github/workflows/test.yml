@@ -104,10 +104,20 @@ jobs:
             const fs = require('fs');
             const outputFile = `${process.env.RUNNER_TEMP}/tofu-validate.txt`;
             const output = fs.existsSync(outputFile) ? fs.readFileSync(outputFile, 'utf8') : '';
-            const count = (output.match(/^Warning:/gm) || []).length;
-            if (!count) { return; }
-            const lines = [`**⚠️ OpenTofu lint: ${count} warning${count === 1 ? '' : 's'}**`, ''];
-            lines.push('<details>', '<summary>Lint Warnings</summary>', '', '```hcl', output, '```', '', '</details>');
+            const escape = (s) => String(s).replace(/[`|\\]/g, '\\$&');
+            const warnings = output.split(/^Warning: /m).slice(1)
+              .map((block) => block.replace(/\nSuccess!.*$/s, '').trim())
+              .filter((block) => !block.startsWith('Experimental linting enabled'));
+            if (!warnings.length) { return; }
+            const logo = '<picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-dark.png"><img src="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-light.png" height="24"></picture>';
+            const lines = [logo, '', '| Rule | Location | Message |', '|---|---|---|'];
+            for (const block of warnings) {
+              const rule = block.match(/\((\S+:\S+)\)\s*$/m);
+              const location = block.match(/^\s*on (\S+) line (\d+)/m);
+              const message = block.split(/\n\s*\n/).pop().trim().replace(/\s+/g, ' ');
+              lines.push(`| ⚠️ \`${escape(rule ? rule[1] : 'unknown')}\` | ${location ? `\`${escape(location[1])}:${location[2]}\`` : ''} | ${escape(message)} |`);
+            }
+            lines.push('', '<details>', '<summary>Full Lint Output</summary>', '', '```hcl', warnings.map((w) => `Warning: ${w}`).join('\n\n'), '```', '', '</details>');
             await core.summary.addRaw(lines.join('\n')).write();
 
       - name: OpenTofu test
