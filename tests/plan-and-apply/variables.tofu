@@ -6,13 +6,9 @@ variable "project" {
   type        = string
 }
 
-variable "project_billing_account" {
-  default     = "01C550-A2C86B-B8F16B"
-  description = "The billing account to associate with the project"
-  type        = string
-}
-
-variable "project_cis_2_2_logging_sink_project_id" {
-  description = "The CIS 2.2 logging sink project ID"
+# Intentionally unused to exercise the -lint summary in the called workflows.
+variable "intentional_lint_failure" {
+  default     = null
+  description = "Intentionally unused variable that triggers the core:unused-variable lint warning"
   type        = string
 }

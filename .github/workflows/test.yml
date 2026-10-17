@@ -3,6 +3,11 @@ name: Test Called Workflow
 on:
   workflow_call:
     inputs:
+      opentofu_lint:
+        description: "Whether to run tofu validate with the experimental -lint flag (warnings only)"
+        required: false
+        type: boolean
+        default: true
       opentofu_test_args:
         description: "Additional arguments to pass to the tofu test command"
         required: false
@@ -83,7 +88,12 @@ jobs:
         run: tofu init
 
       - name: OpenTofu validate
-        run: tofu validate
+        env:
+          OPENTOFU_LINT: ${{ inputs.opentofu_lint && '-lint=all' || '' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          tofu validate -no-color $OPENTOFU_LINT 2>&1 | tee "$RUNNER_TEMP/tofu-validate.txt"
 
       - name: OpenTofu test
         id: test
@@ -114,6 +124,22 @@ jobs:
               if (fileMatch) currentFile = fileMatch[1];
               if (runMatch && currentFile) runs.push({ file: currentFile, run: runMatch[1], result: runMatch[2] });
             }
+            const lintFile = `${process.env.RUNNER_TEMP}/tofu-validate.txt`;
+            const lintOutput = fs.existsSync(lintFile) ? fs.readFileSync(lintFile, 'utf8') : '';
+            const lintWarnings = lintOutput.split(/^Warning: /m).slice(1)
+              .map((block) => block.replace(/\nSuccess!.*$/s, '').trim())
+              .filter((block) => !block.startsWith('Experimental linting enabled'));
+            const lintLines = [];
+            if (lintWarnings.length) {
+              lintLines.push('**🔍 Lint warnings**', '', '| Result | Rule | Location | Message |', '|---|---|---|---|');
+              for (const block of lintWarnings) {
+                const rule = block.match(/\((\S+:\S+)\)\s*$/m);
+                const location = block.match(/^\s*on (\S+) line (\d+)/m);
+                const message = block.split(/\n\s*\n/).pop().trim().replace(/\s+/g, ' ');
+                lintLines.push(`| ⚠️ | \`${escape(rule ? rule[1] : 'unknown')}\` | ${location ? `\`${escape(location[1])}:${location[2]}\`` : ''} | ${escape(message)} |`);
+              }
+              lintLines.push('');
+            }
             const logo = '<picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-dark.png"><img src="https://raw.githubusercontent.com/opentofu/brand-artifacts/main/full/transparent/PNG/on-light.png" height="24"></picture>';
             const lines = [logo, ''];
             if (runs.length) {
@@ -125,6 +151,7 @@ jobs:
               lines.push('');
             }
             if (errorMatch) { lines.push(`> ❌ ${errorMatch[0]}`, ''); }
+            lines.push(...lintLines);
             lines.push('<details>', '<summary>Full Test Output</summary>', '', '```hcl', output, '```', '', '</details>');
             await core.summary.addRaw(lines.join('\n')).write();
 
