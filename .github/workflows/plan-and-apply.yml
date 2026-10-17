@@ -15,6 +15,11 @@ on:
         description: "The KMS key used to encrypt OpenTofu state"
         required: true
         type: string
+      opentofu_lint:
+        description: "Whether to run tofu validate with the experimental -lint flag (warnings only)"
+        required: false
+        type: boolean
+        default: true
       opentofu_plan_args:
         description: "Additional arguments to pass to the tofu plan command"
         required: false
@@ -203,7 +208,27 @@ jobs:
           2>/dev/null | jq -c . || echo '')" >> "$GITHUB_OUTPUT"
 
       - name: OpenTofu validate
-        run: tofu validate
+        env:
+          OPENTOFU_LINT: ${{ inputs.opentofu_lint && '-lint' || '' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          tofu validate -no-color $OPENTOFU_LINT 2>&1 | tee "$RUNNER_TEMP/tofu-validate.txt"
+
+      - name: OpenTofu lint summary
+        if: always() && inputs.opentofu_lint
+        continue-on-error: true
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const fs = require('fs');
+            const outputFile = `${process.env.RUNNER_TEMP}/tofu-validate.txt`;
+            const output = fs.existsSync(outputFile) ? fs.readFileSync(outputFile, 'utf8') : '';
+            const count = (output.match(/^Warning:/gm) || []).length;
+            if (!count) { return; }
+            const lines = [`**⚠️ OpenTofu lint: ${count} warning${count === 1 ? '' : 's'}**`, ''];
+            lines.push('<details>', '<summary>Lint Warnings</summary>', '', '```hcl', output, '```', '', '</details>');
+            await core.summary.addRaw(lines.join('\n')).write();
 
       - name: OpenTofu plan
         id: plan
