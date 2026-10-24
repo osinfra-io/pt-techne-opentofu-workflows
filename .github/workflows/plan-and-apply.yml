@@ -260,6 +260,7 @@ jobs:
         env:
           OPENTOFU_PLAN_ARGS: ${{ inputs.opentofu_plan_args }}
           OPENTOFU_PLAN_SECRET_ARGS: ${{ secrets.opentofu_plan_secret_args }}
+          TERRAFORM_VAULT_SKIP_CHILD_TOKEN: ${{ inputs.openbao_address != '' && 'true' || 'false' }}
           VAULT_ADDR: ${{ inputs.openbao_address }}
           VAULT_TOKEN: ${{ steps.openbao.outputs.vault_token }}
         shell: bash
