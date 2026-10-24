@@ -7,6 +7,26 @@ on:
         description: "The git ref to checkout for the deployment"
         required: false
         type: string
+      openbao_address:
+        description: "The OpenBao address for optional GitHub OIDC authentication"
+        required: false
+        type: string
+        default: ""
+      openbao_jwt_auth_mount:
+        description: "The OpenBao JWT auth mount path, without leading or trailing slashes"
+        required: false
+        type: string
+        default: ""
+      openbao_jwt_role:
+        description: "The OpenBao JWT role to use for GitHub OIDC authentication"
+        required: false
+        type: string
+        default: ""
+      openbao_jwt_audience:
+        description: "The audience requested for the GitHub OIDC token"
+        required: false
+        type: string
+        default: ""
       github_environment:
         description: "The GitHub environment to deploy to (sandbox, non-production, production)"
         required: true
@@ -218,10 +238,45 @@ jobs:
       - name: OpenTofu plan
         id: plan
         env:
+          OPENBAO_ADDRESS: ${{ inputs.openbao_address }}
+          OPENBAO_JWT_AUTH_MOUNT: ${{ inputs.openbao_jwt_auth_mount }}
+          OPENBAO_JWT_AUDIENCE: ${{ inputs.openbao_jwt_audience }}
+          OPENBAO_JWT_ROLE: ${{ inputs.openbao_jwt_role }}
           OPENTOFU_PLAN_ARGS: ${{ inputs.opentofu_plan_args }}
           OPENTOFU_PLAN_SECRET_ARGS: ${{ secrets.opentofu_plan_secret_args }}
         shell: bash
         run: |
+          set -euo pipefail
+          if [[ -n "$OPENBAO_ADDRESS" || -n "$OPENBAO_JWT_AUTH_MOUNT" || -n "$OPENBAO_JWT_AUDIENCE" || -n "$OPENBAO_JWT_ROLE" ]]; then
+            if [[ -z "$OPENBAO_ADDRESS" || -z "$OPENBAO_JWT_AUTH_MOUNT" || -z "$OPENBAO_JWT_AUDIENCE" || -z "$OPENBAO_JWT_ROLE" ]]; then
+              echo "::error::Set all four OpenBao authentication inputs or leave all four empty."
+              exit 1
+            fi
+            if [[ ! "$OPENBAO_JWT_AUTH_MOUNT" =~ ^[A-Za-z0-9_-]+$ ]]; then
+              echo "::error::The OpenBao JWT auth mount must be a single path segment."
+              exit 1
+            fi
+
+            jwt_response="$(curl --fail --silent --show-error \
+              --header "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+              --get --data-urlencode "audience=$OPENBAO_JWT_AUDIENCE" \
+              "$ACTIONS_ID_TOKEN_REQUEST_URL")"
+            jwt="$(jq -er '.value | strings | select(length > 0)' <<<"$jwt_response")"
+            printf '::add-mask::%s\n' "$jwt"
+
+            login_payload="$(jq -n --arg role "$OPENBAO_JWT_ROLE" --arg jwt "$jwt" '{role: $role, jwt: $jwt}')"
+            client_token="$(curl --fail --silent --show-error \
+              --header "Content-Type: application/json" \
+              --request POST \
+              --data "$login_payload" \
+              "${OPENBAO_ADDRESS%/}/v1/auth/$OPENBAO_JWT_AUTH_MOUNT/login" \
+              | jq -er '.auth.client_token | strings | select(length > 0)')"
+            printf '::add-mask::%s\n' "$client_token"
+
+            export VAULT_ADDR="$OPENBAO_ADDRESS"
+            export VAULT_TOKEN="$client_token"
+          fi
+
           set +e
           tofu plan -detailed-exitcode -input=false -out=plan.out $OPENTOFU_PLAN_ARGS $OPENTOFU_PLAN_SECRET_ARGS
           exitcode=$?
@@ -348,9 +403,44 @@ jobs:
 
       - name: OpenTofu apply
         id: apply
+        env:
+          OPENBAO_ADDRESS: ${{ inputs.openbao_address }}
+          OPENBAO_JWT_AUTH_MOUNT: ${{ inputs.openbao_jwt_auth_mount }}
+          OPENBAO_JWT_AUDIENCE: ${{ inputs.openbao_jwt_audience }}
+          OPENBAO_JWT_ROLE: ${{ inputs.openbao_jwt_role }}
         shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
+          if [[ -n "$OPENBAO_ADDRESS" || -n "$OPENBAO_JWT_AUTH_MOUNT" || -n "$OPENBAO_JWT_AUDIENCE" || -n "$OPENBAO_JWT_ROLE" ]]; then
+            if [[ -z "$OPENBAO_ADDRESS" || -z "$OPENBAO_JWT_AUTH_MOUNT" || -z "$OPENBAO_JWT_AUDIENCE" || -z "$OPENBAO_JWT_ROLE" ]]; then
+              echo "::error::Set all four OpenBao authentication inputs or leave all four empty."
+              exit 1
+            fi
+            if [[ ! "$OPENBAO_JWT_AUTH_MOUNT" =~ ^[A-Za-z0-9_-]+$ ]]; then
+              echo "::error::The OpenBao JWT auth mount must be a single path segment."
+              exit 1
+            fi
+
+            jwt_response="$(curl --fail --silent --show-error \
+              --header "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+              --get --data-urlencode "audience=$OPENBAO_JWT_AUDIENCE" \
+              "$ACTIONS_ID_TOKEN_REQUEST_URL")"
+            jwt="$(jq -er '.value | strings | select(length > 0)' <<<"$jwt_response")"
+            printf '::add-mask::%s\n' "$jwt"
+
+            login_payload="$(jq -n --arg role "$OPENBAO_JWT_ROLE" --arg jwt "$jwt" '{role: $role, jwt: $jwt}')"
+            client_token="$(curl --fail --silent --show-error \
+              --header "Content-Type: application/json" \
+              --request POST \
+              --data "$login_payload" \
+              "${OPENBAO_ADDRESS%/}/v1/auth/$OPENBAO_JWT_AUTH_MOUNT/login" \
+              | jq -er '.auth.client_token | strings | select(length > 0)')"
+            printf '::add-mask::%s\n' "$client_token"
+
+            export VAULT_ADDR="$OPENBAO_ADDRESS"
+            export VAULT_TOKEN="$client_token"
+          fi
+
           tofu apply -no-color plan.out 2>&1 | tee "$RUNNER_TEMP/tofu-apply.txt"
 
       - name: OpenTofu summary

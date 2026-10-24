@@ -18,6 +18,12 @@ Reusable GitHub Actions workflows for OpenTofu validation and environment deploy
 - [OpenID connect in Google Cloud Platform](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-google-cloud-platform)
 - [OpenTofu state and plan encryption](https://opentofu.org/docs/language/state/encryption)
 
+### Optional OpenBao authentication
+
+`plan-and-apply.yml` can authenticate to OpenBao with a short-lived GitHub Actions OIDC token. Set all four inputs — `openbao_address`, `openbao_jwt_auth_mount`, `openbao_jwt_role`, and `openbao_jwt_audience` — to enable it; leave all four unset to preserve the existing workflow behavior. Partial configuration fails before any token request.
+
+The plan and apply jobs each request a job-scoped JWT for the configured audience and exchange it at the selected OpenBao JWT auth mount. The returned token is masked and passed only to the OpenTofu plan or apply process through `VAULT_ADDR` and `VAULT_TOKEN`. Neither token is written to workflow outputs, environment files, or job summaries, and no long-lived OpenBao token is stored as a workflow secret.
+
 ### Workflows
 
 - [plan-and-apply.yml](.github/workflows/plan-and-apply.yml)
