@@ -17,8 +17,13 @@ on:
         required: false
         type: string
         default: ""
-      openbao_jwt_role:
-        description: "The OpenBao JWT role to use for GitHub OIDC authentication"
+      openbao_jwt_apply_role:
+        description: "The OpenBao JWT role to use for protected apply authentication"
+        required: false
+        type: string
+        default: ""
+      openbao_jwt_plan_role:
+        description: "The read-only OpenBao JWT role to use for plan authentication"
         required: false
         type: string
         default: ""
@@ -241,15 +246,16 @@ jobs:
           OPENBAO_ADDRESS: ${{ inputs.openbao_address }}
           OPENBAO_JWT_AUTH_MOUNT: ${{ inputs.openbao_jwt_auth_mount }}
           OPENBAO_JWT_AUDIENCE: ${{ inputs.openbao_jwt_audience }}
-          OPENBAO_JWT_ROLE: ${{ inputs.openbao_jwt_role }}
+          OPENBAO_JWT_APPLY_ROLE: ${{ inputs.openbao_jwt_apply_role }}
+          OPENBAO_JWT_PLAN_ROLE: ${{ inputs.openbao_jwt_plan_role }}
           OPENTOFU_PLAN_ARGS: ${{ inputs.opentofu_plan_args }}
           OPENTOFU_PLAN_SECRET_ARGS: ${{ secrets.opentofu_plan_secret_args }}
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -n "$OPENBAO_ADDRESS" || -n "$OPENBAO_JWT_AUTH_MOUNT" || -n "$OPENBAO_JWT_AUDIENCE" || -n "$OPENBAO_JWT_ROLE" ]]; then
-            if [[ -z "$OPENBAO_ADDRESS" || -z "$OPENBAO_JWT_AUTH_MOUNT" || -z "$OPENBAO_JWT_AUDIENCE" || -z "$OPENBAO_JWT_ROLE" ]]; then
-              echo "::error::Set all four OpenBao authentication inputs or leave all four empty."
+          if [[ -n "$OPENBAO_ADDRESS" || -n "$OPENBAO_JWT_AUTH_MOUNT" || -n "$OPENBAO_JWT_AUDIENCE" || -n "$OPENBAO_JWT_PLAN_ROLE" || -n "$OPENBAO_JWT_APPLY_ROLE" ]]; then
+            if [[ -z "$OPENBAO_ADDRESS" || -z "$OPENBAO_JWT_AUTH_MOUNT" || -z "$OPENBAO_JWT_AUDIENCE" || -z "$OPENBAO_JWT_PLAN_ROLE" || -z "$OPENBAO_JWT_APPLY_ROLE" ]]; then
+              echo "::error::Set all five OpenBao authentication inputs or leave all five empty."
               exit 1
             fi
             if [[ ! "$OPENBAO_JWT_AUTH_MOUNT" =~ ^[A-Za-z0-9_-]+$ ]]; then
@@ -264,7 +270,7 @@ jobs:
             jwt="$(jq -er '.value | strings | select(length > 0)' <<<"$jwt_response")"
             printf '::add-mask::%s\n' "$jwt"
 
-            login_payload="$(jq -n --arg role "$OPENBAO_JWT_ROLE" --arg jwt "$jwt" '{role: $role, jwt: $jwt}')"
+            login_payload="$(jq -n --arg role "$OPENBAO_JWT_PLAN_ROLE" --arg jwt "$jwt" '{role: $role, jwt: $jwt}')"
             client_token="$(curl --fail --silent --show-error \
               --header "Content-Type: application/json" \
               --request POST \
@@ -407,13 +413,14 @@ jobs:
           OPENBAO_ADDRESS: ${{ inputs.openbao_address }}
           OPENBAO_JWT_AUTH_MOUNT: ${{ inputs.openbao_jwt_auth_mount }}
           OPENBAO_JWT_AUDIENCE: ${{ inputs.openbao_jwt_audience }}
-          OPENBAO_JWT_ROLE: ${{ inputs.openbao_jwt_role }}
+          OPENBAO_JWT_APPLY_ROLE: ${{ inputs.openbao_jwt_apply_role }}
+          OPENBAO_JWT_PLAN_ROLE: ${{ inputs.openbao_jwt_plan_role }}
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -n "$OPENBAO_ADDRESS" || -n "$OPENBAO_JWT_AUTH_MOUNT" || -n "$OPENBAO_JWT_AUDIENCE" || -n "$OPENBAO_JWT_ROLE" ]]; then
-            if [[ -z "$OPENBAO_ADDRESS" || -z "$OPENBAO_JWT_AUTH_MOUNT" || -z "$OPENBAO_JWT_AUDIENCE" || -z "$OPENBAO_JWT_ROLE" ]]; then
-              echo "::error::Set all four OpenBao authentication inputs or leave all four empty."
+          if [[ -n "$OPENBAO_ADDRESS" || -n "$OPENBAO_JWT_AUTH_MOUNT" || -n "$OPENBAO_JWT_AUDIENCE" || -n "$OPENBAO_JWT_PLAN_ROLE" || -n "$OPENBAO_JWT_APPLY_ROLE" ]]; then
+            if [[ -z "$OPENBAO_ADDRESS" || -z "$OPENBAO_JWT_AUTH_MOUNT" || -z "$OPENBAO_JWT_AUDIENCE" || -z "$OPENBAO_JWT_PLAN_ROLE" || -z "$OPENBAO_JWT_APPLY_ROLE" ]]; then
+              echo "::error::Set all five OpenBao authentication inputs or leave all five empty."
               exit 1
             fi
             if [[ ! "$OPENBAO_JWT_AUTH_MOUNT" =~ ^[A-Za-z0-9_-]+$ ]]; then
@@ -428,7 +435,7 @@ jobs:
             jwt="$(jq -er '.value | strings | select(length > 0)' <<<"$jwt_response")"
             printf '::add-mask::%s\n' "$jwt"
 
-            login_payload="$(jq -n --arg role "$OPENBAO_JWT_ROLE" --arg jwt "$jwt" '{role: $role, jwt: $jwt}')"
+            login_payload="$(jq -n --arg role "$OPENBAO_JWT_APPLY_ROLE" --arg jwt "$jwt" '{role: $role, jwt: $jwt}')"
             client_token="$(curl --fail --silent --show-error \
               --header "Content-Type: application/json" \
               --request POST \

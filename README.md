@@ -20,9 +20,9 @@ Reusable GitHub Actions workflows for OpenTofu validation and environment deploy
 
 ### Optional OpenBao authentication
 
-`plan-and-apply.yml` can authenticate to OpenBao with a short-lived GitHub Actions OIDC token. Set all four inputs — `openbao_address`, `openbao_jwt_auth_mount`, `openbao_jwt_role`, and `openbao_jwt_audience` — to enable it; leave all four unset to preserve the existing workflow behavior. Partial configuration fails before any token request.
+`plan-and-apply.yml` can authenticate to OpenBao with short-lived GitHub Actions OIDC tokens. Set all five inputs — `openbao_address`, `openbao_jwt_auth_mount`, `openbao_jwt_audience`, `openbao_jwt_plan_role`, and `openbao_jwt_apply_role` — to enable it; leave all five unset to preserve the existing workflow behavior. Partial configuration fails before any token request.
 
-The plan and apply jobs each request a job-scoped JWT for the configured audience and exchange it at the selected OpenBao JWT auth mount. The returned token is masked and passed only to the OpenTofu plan or apply process through `VAULT_ADDR` and `VAULT_TOKEN`. Neither token is written to workflow outputs, environment files, or job summaries, and no long-lived OpenBao token is stored as a workflow secret.
+The plan and apply jobs each request a job-scoped JWT for the configured audience and exchange it at the selected OpenBao JWT auth mount, using their respective roles. Configure the plan role as read-only and restrict it to the repository/ref; bind the apply role to the protected deployment environment and grant only the required configuration capabilities. The returned token is masked and passed only to the corresponding OpenTofu process through `VAULT_ADDR` and `VAULT_TOKEN`. Neither token is written to workflow outputs, environment files, or job summaries, and no long-lived OpenBao token is stored as a workflow secret.
 
 ### Workflows
 
