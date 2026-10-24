@@ -55,7 +55,7 @@ on:
         required: true
         type: string
       opentofu_var_json:
-        description: "JSON object of extra OpenTofu variables to inject; each top-level key becomes TF_VAR_<key> (value JSON-encoded)"
+        description: "JSON object of extra OpenTofu variables to inject; each key becomes TF_VAR_<key> (strings raw, other values JSON-encoded)"
         required: false
         type: string
         default: ""
@@ -205,7 +205,7 @@ jobs:
           OPENTOFU_VAR_JSON: ${{ inputs.opentofu_var_json }}
         run: >-
           echo "$OPENTOFU_VAR_JSON"
-          | jq -r 'to_entries[] | "TF_VAR_\(.key)=\(.value | tojson)"'
+          | jq -r 'to_entries[] | "TF_VAR_\(.key)=\(.value | if type == "string" then . else tojson end)"'
           >> "$GITHUB_ENV"
 
       - name: OpenTofu initialize
