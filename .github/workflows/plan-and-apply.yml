@@ -7,6 +7,31 @@ on:
         description: "The git ref to checkout for the deployment"
         required: false
         type: string
+      openbao_address:
+        description: "The OpenBao address for optional GitHub OIDC authentication"
+        required: false
+        type: string
+        default: ""
+      openbao_jwt_auth_mount:
+        description: "The OpenBao JWT auth mount path, without leading or trailing slashes"
+        required: false
+        type: string
+        default: ""
+      openbao_jwt_apply_role:
+        description: "The OpenBao JWT role to use for protected apply authentication"
+        required: false
+        type: string
+        default: ""
+      openbao_jwt_plan_role:
+        description: "The read-only OpenBao JWT role to use for plan authentication"
+        required: false
+        type: string
+        default: ""
+      openbao_jwt_audience:
+        description: "The audience requested for the GitHub OIDC token"
+        required: false
+        type: string
+        default: ""
       github_environment:
         description: "The GitHub environment to deploy to (sandbox, non-production, production)"
         required: true
@@ -215,13 +240,32 @@ jobs:
           set -o pipefail
           tofu validate -no-color $OPENTOFU_LINT 2>&1 | tee "$RUNNER_TEMP/tofu-validate.txt"
 
+      # OpenBao supports Vault API clients: https://github.com/orgs/openbao/discussions/2310
+      - name: Authenticate to OpenBao for plan
+        if: inputs.openbao_address != ''
+        id: openbao
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          exportEnv: false
+          exportToken: false
+          jwtGithubAudience: ${{ inputs.openbao_jwt_audience }}
+          method: jwt
+          outputToken: true
+          path: ${{ inputs.openbao_jwt_auth_mount }}
+          role: ${{ inputs.openbao_jwt_plan_role }}
+          url: ${{ inputs.openbao_address }}
+
       - name: OpenTofu plan
         id: plan
         env:
           OPENTOFU_PLAN_ARGS: ${{ inputs.opentofu_plan_args }}
           OPENTOFU_PLAN_SECRET_ARGS: ${{ secrets.opentofu_plan_secret_args }}
+          TERRAFORM_VAULT_SKIP_CHILD_TOKEN: ${{ inputs.openbao_address != '' && 'true' || 'false' }}
+          VAULT_ADDR: ${{ inputs.openbao_address }}
+          VAULT_TOKEN: ${{ steps.openbao.outputs.vault_token }}
         shell: bash
         run: |
+          set -euo pipefail
           set +e
           tofu plan -detailed-exitcode -input=false -out=plan.out $OPENTOFU_PLAN_ARGS $OPENTOFU_PLAN_SECRET_ARGS
           exitcode=$?
@@ -346,11 +390,29 @@ jobs:
           tofu_version: ${{ inputs.opentofu_version }}
           tofu_wrapper: false
 
+      # OpenBao supports Vault API clients: https://github.com/orgs/openbao/discussions/2310
+      - name: Authenticate to OpenBao for apply
+        if: inputs.openbao_address != ''
+        id: openbao
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          exportEnv: false
+          exportToken: false
+          jwtGithubAudience: ${{ inputs.openbao_jwt_audience }}
+          method: jwt
+          outputToken: true
+          path: ${{ inputs.openbao_jwt_auth_mount }}
+          role: ${{ inputs.openbao_jwt_apply_role }}
+          url: ${{ inputs.openbao_address }}
+
       - name: OpenTofu apply
         id: apply
+        env:
+          VAULT_ADDR: ${{ inputs.openbao_address }}
+          VAULT_TOKEN: ${{ steps.openbao.outputs.vault_token }}
         shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
           tofu apply -no-color plan.out 2>&1 | tee "$RUNNER_TEMP/tofu-apply.txt"
 
       - name: OpenTofu summary
