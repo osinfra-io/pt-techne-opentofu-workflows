@@ -240,27 +240,6 @@ jobs:
           set -o pipefail
           tofu validate -no-color $OPENTOFU_LINT 2>&1 | tee "$RUNNER_TEMP/tofu-validate.txt"
 
-      - name: Validate OpenBao inputs for plan
-        env:
-          OPENBAO_ADDRESS: ${{ inputs.openbao_address }}
-          OPENBAO_JWT_AUTH_MOUNT: ${{ inputs.openbao_jwt_auth_mount }}
-          OPENBAO_JWT_AUDIENCE: ${{ inputs.openbao_jwt_audience }}
-          OPENBAO_JWT_APPLY_ROLE: ${{ inputs.openbao_jwt_apply_role }}
-          OPENBAO_JWT_PLAN_ROLE: ${{ inputs.openbao_jwt_plan_role }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ -n "$OPENBAO_ADDRESS" || -n "$OPENBAO_JWT_AUTH_MOUNT" || -n "$OPENBAO_JWT_AUDIENCE" || -n "$OPENBAO_JWT_PLAN_ROLE" || -n "$OPENBAO_JWT_APPLY_ROLE" ]]; then
-            if [[ -z "$OPENBAO_ADDRESS" || -z "$OPENBAO_JWT_AUTH_MOUNT" || -z "$OPENBAO_JWT_AUDIENCE" || -z "$OPENBAO_JWT_PLAN_ROLE" || -z "$OPENBAO_JWT_APPLY_ROLE" ]]; then
-              echo "::error::Set all five OpenBao authentication inputs or leave all five empty."
-              exit 1
-            fi
-            if [[ ! "$OPENBAO_JWT_AUTH_MOUNT" =~ ^[A-Za-z0-9_-]+$ ]]; then
-              echo "::error::The OpenBao JWT auth mount must be a single path segment."
-              exit 1
-            fi
-          fi
-
       # OpenBao supports Vault API clients: https://github.com/orgs/openbao/discussions/2310
       - name: Authenticate to OpenBao for plan
         if: inputs.openbao_address != ''
@@ -409,27 +388,6 @@ jobs:
         with:
           tofu_version: ${{ inputs.opentofu_version }}
           tofu_wrapper: false
-
-      - name: Validate OpenBao inputs for apply
-        env:
-          OPENBAO_ADDRESS: ${{ inputs.openbao_address }}
-          OPENBAO_JWT_AUTH_MOUNT: ${{ inputs.openbao_jwt_auth_mount }}
-          OPENBAO_JWT_AUDIENCE: ${{ inputs.openbao_jwt_audience }}
-          OPENBAO_JWT_APPLY_ROLE: ${{ inputs.openbao_jwt_apply_role }}
-          OPENBAO_JWT_PLAN_ROLE: ${{ inputs.openbao_jwt_plan_role }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ -n "$OPENBAO_ADDRESS" || -n "$OPENBAO_JWT_AUTH_MOUNT" || -n "$OPENBAO_JWT_AUDIENCE" || -n "$OPENBAO_JWT_PLAN_ROLE" || -n "$OPENBAO_JWT_APPLY_ROLE" ]]; then
-            if [[ -z "$OPENBAO_ADDRESS" || -z "$OPENBAO_JWT_AUTH_MOUNT" || -z "$OPENBAO_JWT_AUDIENCE" || -z "$OPENBAO_JWT_PLAN_ROLE" || -z "$OPENBAO_JWT_APPLY_ROLE" ]]; then
-              echo "::error::Set all five OpenBao authentication inputs or leave all five empty."
-              exit 1
-            fi
-            if [[ ! "$OPENBAO_JWT_AUTH_MOUNT" =~ ^[A-Za-z0-9_-]+$ ]]; then
-              echo "::error::The OpenBao JWT auth mount must be a single path segment."
-              exit 1
-            fi
-          fi
 
       # OpenBao supports Vault API clients: https://github.com/orgs/openbao/discussions/2310
       - name: Authenticate to OpenBao for apply
