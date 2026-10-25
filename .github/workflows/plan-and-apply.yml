@@ -203,10 +203,17 @@ jobs:
         if: inputs.opentofu_var_json != ''
         env:
           OPENTOFU_VAR_JSON: ${{ inputs.opentofu_var_json }}
-        run: >-
-          echo "$OPENTOFU_VAR_JSON"
-          | jq -r 'to_entries[] | "TF_VAR_\(.key)=\(.value | if type == "string" then . else tojson end)"'
-          >> "$GITHUB_ENV"
+        run: |
+          delimiter="ghadelimiter_$(openssl rand -hex 32)"
+          jq -r --arg delimiter "$delimiter" '
+            to_entries[] |
+            (.value | if type == "string" then . else tojson end) as $value |
+            if ($value | split("\n") | any(rtrimstr("\r") == $delimiter)) then
+              error("OpenTofu variable contains the environment-file delimiter")
+            else
+              "TF_VAR_\(.key)<<\($delimiter)\n\($value)\n\($delimiter)"
+            end
+          ' <<< "$OPENTOFU_VAR_JSON" >> "$GITHUB_ENV"
 
       - name: OpenTofu initialize
         env:
